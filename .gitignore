@@ -1,0 +1,13 @@
+.env
+.token.json
+credentials.json
+service.json
+/octo-api-clients/
+/.credentials/
+/.Propaler_history
+data/
+/.chroma/
+exlangchain.old/
+GPTCache/
+download/
+models/
