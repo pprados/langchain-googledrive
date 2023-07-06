@@ -5,7 +5,7 @@ from langchain.callbacks.manager import (
     CallbackManagerForToolRun,
 )
 from langchain.tools import BaseTool
-from langchain.utilities.google_drive import FORMAT_INSTRUCTION, GoogleDriveAPIWrapper
+from ...utilities.google_drive import FORMAT_INSTRUCTION, GoogleDriveAPIWrapper
 
 
 class GoogleDriveSearchTool(BaseTool):
