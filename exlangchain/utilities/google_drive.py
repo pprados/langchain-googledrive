@@ -38,7 +38,7 @@ from langchain.document_loaders.base import BaseLoader
 from langchain.schema import Document
 
 FORMAT_INSTRUCTION = (
-    "The input should be formatted as a list of keyworkds separated"
+    "The input should be formatted as a list of entities separated"
     " with a space. As an example, a list of keywords is 'hello word'."
 )
 
@@ -196,6 +196,7 @@ def default_conv_loader(
             UnstructuredHTMLLoader,
             UnstructuredImageLoader,
             UnstructuredMarkdownLoader,
+            UnstructuredODTLoader,
             UnstructuredPDFLoader,
             UnstructuredPowerPointLoader,
             UnstructuredWordDocumentLoader,
@@ -267,6 +268,7 @@ def default_conv_loader(
                 ),  # DOCX
                 # "application/vnd.openxmlformats-officedocument.
                 # spreadsheetml.sheet": # XLSX
+                "application/vnd.oasis.opendocument.text": UnstructuredODTLoader,
             }
         )
     except ImportError:
@@ -893,7 +895,6 @@ class GoogleDriveUtilities(BaseModel):
                                 f"Exception during the convertion of file "
                                 f"'{file['name']}' ({e})"
                             )
-                            traceback.print_exception(e)
                             return
                     else:
                         logger.warning(
@@ -1331,7 +1332,7 @@ class GoogleDriveUtilities(BaseModel):
     @staticmethod
     def _extract_text(
         node: Any, key: str = "content", path: str = "/textRun"
-    ) -> list[str]:
+    ) -> List[str]:
         result = []
 
         def visitor(node: Any, parent: str) -> None:
@@ -1638,7 +1639,7 @@ class GoogleDriveAPIWrapper(GoogleDriveUtilities):
             num_results: The number of results to return.
 
         Returns:
-            A list of dictionaries with the following keys:
+            Like bing_search, a list of dictionaries with the following keys:
                 `snippet: The `description` of the result.
                 `title`: The title of the result.
                 `link`: The link to the result.
