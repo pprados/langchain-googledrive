@@ -11,3 +11,8 @@ exlangchain.old/
 GPTCache/
 download/
 models/
+.venv/
+__pycache__
+.idea/
+dist/
+*.egg-info/
