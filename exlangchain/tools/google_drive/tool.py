@@ -1,3 +1,4 @@
+import logging
 from typing import Optional
 
 from langchain.callbacks.manager import (
@@ -6,6 +7,8 @@ from langchain.callbacks.manager import (
 )
 from langchain.tools import BaseTool
 from ...utilities.google_drive import FORMAT_INSTRUCTION, GoogleDriveAPIWrapper
+
+logger = logging.getLogger(__name__)
 
 
 class GoogleDriveSearchTool(BaseTool):
@@ -25,6 +28,7 @@ class GoogleDriveSearchTool(BaseTool):
         run_manager: Optional[CallbackManagerForToolRun] = None,
     ) -> str:
         """Use the tool."""
+        logger.info(f"{query=}")
         return self.api_wrapper.run(query)
 
     async def _arun(

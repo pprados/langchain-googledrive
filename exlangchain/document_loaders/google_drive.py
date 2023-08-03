@@ -85,7 +85,7 @@ class GoogleDriveLoader(BaseLoader, GoogleDriveUtilities):
                 if "GOOGLE_ACCOUNT_FILE" in os.environ
                 else None
             )
-            # Deprecated: To be compatible with the old approach of authentification
+            # Deprecated: To be compatible with the old approach of authentication
             if service_account_key:
                 api_file = service_account_key
             elif credentials_path:
@@ -96,7 +96,7 @@ class GoogleDriveLoader(BaseLoader, GoogleDriveUtilities):
 
         if not v.get("template"):
             if folder_id:
-                template = get_template("gdrive-all-in-folders")
+                template = get_template("gdrive-all-in-folder")
             elif "document_ids" in v or "file_ids" in v:
                 template = OriginalPromptTemplate(input_variables=[], template="")
             else:

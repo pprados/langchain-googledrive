@@ -34,7 +34,43 @@ from pydantic.fields import Field
 from pydantic.main import BaseModel
 from pydantic.types import FilePath
 
-from langchain.document_loaders.base import BaseLoader
+from langchain.load.serializable import Serializable
+from langchain.schema import Document
+
+# from langchain.document_loaders.base import BaseLoader
+from langchain.text_splitter import TextSplitter
+
+
+# BaseLoader=Any # Fix circular import
+class BaseLoader(Protocol):
+    """Interface for loading Documents.
+
+    Implementations should implement the lazy-loading method using generators
+    to avoid loading all Documents into memory at once.
+
+    The `load` method will remain as is for backwards compatibility, but its
+    implementation should be just `list(self.lazy_load())`.
+    """
+
+    # Sub-classes should implement this method
+    # as return list(self.lazy_load()).
+    # This method returns a List which is materialized in memory.
+    def load(self) -> List[Document]:
+        ...
+
+    def load_and_split(
+        self, text_splitter: Optional[TextSplitter] = None
+    ) -> List[Document]:
+        ...
+
+    # Attention: This method will be upgraded into an abstractmethod once it's
+    #            implemented in all the existing subclasses.
+    def lazy_load(
+        self,
+    ) -> Iterator[Document]:
+        ...
+
+
 from langchain.schema import Document
 
 FORMAT_INSTRUCTION = (
@@ -101,7 +137,7 @@ logger = logging.getLogger(__name__)
 # - All GDrive api parameters
 # - Url to documents
 # - Environment variable for reference the API tokens
-# - Differents king of strange state with Google File (abscence of URL, etc.)
+# - Different kind of strange state with Google File (absence of URL, etc.)
 
 SCOPES: List[str] = [
     # See https://developers.google.com/identity/protocols/oauth2/scopes
@@ -284,7 +320,7 @@ def _init_templates() -> Dict[str, PromptTemplate]:
     from langchain.prompts.prompt import PromptTemplate as MyPromptTemplate
 
     return {
-        "gdrive-all-in-folders": MyPromptTemplate(
+        "gdrive-all-in-folder": MyPromptTemplate(
             input_variables=["folder_id"],
             template=" '{folder_id}' in parents and trashed=false",
         ),
@@ -296,13 +332,13 @@ def _init_templates() -> Dict[str, PromptTemplate]:
             input_variables=["query"],
             template="name contains '{query}' and trashed=false",
         ),
-        "gdrive-by-name-in-folders": MyPromptTemplate(
+        "gdrive-by-name-in-folder": MyPromptTemplate(
             input_variables=["query", "folder_id"],
             template="name contains '{query}' "
             "and '{folder_id}' in parents "
             "and trashed=false",
         ),
-        "gdrive-query-in-folders": MyPromptTemplate(
+        "gdrive-query-in-folder": MyPromptTemplate(
             input_variables=["query", "folder_id"],
             template="fullText contains '{query}' "
             "and '{folder_id}' in parents "
@@ -312,7 +348,7 @@ def _init_templates() -> Dict[str, PromptTemplate]:
             input_variables=["mime_type"],
             template="mimeType = '{mime_type}' and trashed=false",
         ),
-        "gdrive-mime-type-in-folders": MyPromptTemplate(
+        "gdrive-mime-type-in-folder": MyPromptTemplate(
             input_variables=["mime_type", "folder_id"],
             template="mimeType = '{mime_type}' "
             "and '{folder_id}' in parents "
@@ -324,7 +360,7 @@ def _init_templates() -> Dict[str, PromptTemplate]:
             "and mime_type = '{mime_type}') "
             "and trashed=false",
         ),
-        "gdrive-query-with-mime-type-and-folders": MyPromptTemplate(
+        "gdrive-query-with-mime-type-and-folder": MyPromptTemplate(
             input_variables=["query", "mime_type", "folder_id"],
             template="((fullText contains '{query}') and mime_type = '{mime_type}')"
             "and '{folder_id}' in parents "
@@ -343,7 +379,7 @@ def get_template(template: str) -> PromptTemplate:
     return templates[template]
 
 
-class GoogleDriveUtilities(BaseModel):
+class GoogleDriveUtilities(Serializable, BaseModel):
     """
     Loader that loads documents from Google Drive.
 
@@ -388,22 +424,22 @@ class GoogleDriveUtilities(BaseModel):
     Some pre-formated request are proposed (use {query}, {folder_id}
     and/or {mime_type}):
     - "gdrive-all-in-folder":                   Return all compatible files from a
-                                                `folder_id`
+                                                 `folder_id`
     - "gdrive-query":                           Search `query` in all drives
     - "gdrive-by-name":                         Search file with name `query`)
-    - "gdrive-by-name-in-folders":              Search file with name `query`)
-                                                in `folder_id`
-    - "gdrive-query-in-folders":                Search `query` in `folder_id`
-                                                (and sub-folders in `recursive=true`)
+    - "gdrive-by-name-in-folder":               Search file with name `query`)
+                                                 in `folder_id`
+    - "gdrive-query-in-folder":                 Search `query` in `folder_id`
+                                                 (and sub-folders in `recursive=true`)
     - "gdrive-mime-type":                       Search a specific `mime_type`
     - "gdrive-mime-type-in-folder":             Search a specific `mime_type` in
-                                                `folder_id`
+                                                 `folder_id`
     - "gdrive-query-with-mime-type":            Search `query` with a specific
-                                                `mime_type`
+                                                 `mime_type`
     - "gdrive-query-with-mime-type-and-folder": Search `query` with a specific
-                                                `mime_type` and in `folder_id`
+                                                 `mime_type` and in `folder_id`
 
-    If you ask to use only the `description` of each files (mode='snippets'):
+    If you ask to use only the `description` of each file (mode='snippets'):
     - If a link has a description, use it
     - Else, use the description of the target_id file
     - If the description is empty, ignore the file
@@ -471,15 +507,15 @@ class GoogleDriveUtilities(BaseModel):
     template: Union[
         PromptTemplate,
         Literal[
-            "gdrive-all-in-folders",
+            "gdrive-all-in-folder",
             "gdrive-query",
             "gdrive-by-name",
-            "gdrive-by-name-in-folders",
-            "gdrive-query-in-folders",
+            "gdrive-by-name-in-folder",
+            "gdrive-query-in-folder",
             "gdrive-mime-type",
-            "gdrive-mime-type-in-folders",
+            "gdrive-mime-type-in-folder",
             "gdrive-query-with-mime-type",
-            "gdrive-query-with-mime-type-and-folders",
+            "gdrive-query-with-mime-type-and-folder",
         ],
         None,
     ] = None
@@ -692,7 +728,7 @@ class GoogleDriveUtilities(BaseModel):
         else:
             raise ValueError("Use GOOGLE_ACCOUNT_FILE env. variable.")
 
-        # Implicite location of token.json
+        # Implicit location of token.json
         if not self.gdrive_token_path and credentials_path:
             token_path = credentials_path.parent / "token.json"
 
@@ -847,7 +883,7 @@ class GoogleDriveUtilities(BaseModel):
     def _lazy_load_file_from_file(self, file: Dict) -> Iterator[Document]:
         """
         Load document from GDrive.
-        Use the `conv_mapping` dictionary to convert differents kind of files.
+        Use the `conv_mapping` dictionary to convert different kind of files.
         """
         from googleapiclient.errors import HttpError
         from googleapiclient.http import MediaIoBaseDownload
@@ -855,7 +891,7 @@ class GoogleDriveUtilities(BaseModel):
         suffix = mimetypes.guess_extension(file["mimeType"])
         if not suffix:
             suffix = Path(file["name"]).suffix
-        if suffix not in self._not_supported:  # Allready see this suffix?
+        if suffix not in self._not_supported:  # Already see this suffix?
             try:
                 with tempfile.NamedTemporaryFile(mode="w", suffix=suffix) as tf:
                     path = tf.name
@@ -892,7 +928,7 @@ class GoogleDriveUtilities(BaseModel):
                             return
                         except Exception as e:
                             logger.warning(
-                                f"Exception during the convertion of file "
+                                f"Exception during the conversion of file "
                                 f"'{file['name']}' ({e})"
                             )
                             return
@@ -1062,7 +1098,7 @@ class GoogleDriveUtilities(BaseModel):
         Extract metadata from file
 
         :param file: The file
-        :return: Dict the meta datas
+        :return: Dict the meta data
         """
         meta = {
             "gdriveId": file["id"],
@@ -1164,7 +1200,7 @@ class GoogleDriveUtilities(BaseModel):
                             or file["id"]
                         )
                         if file_key in file in documents_id:
-                            logger.debug(f"Allready yield the document {file['id']}")
+                            logger.debug(f"Already yield the document {file['id']}")
                             continue
                         documents = self._get_document(file, current_mode)
                         for i, document in enumerate(documents):
@@ -1175,7 +1211,7 @@ class GoogleDriveUtilities(BaseModel):
                             if document_key in documents_id:
                                 # May by, with a link
                                 logger.debug(
-                                    f"Allready yield the document '{document_key}'"
+                                    f"Already yield the document '{document_key}'"
                                 )
                                 continue
                             documents_id.add(document_key)
@@ -1419,10 +1455,10 @@ class GoogleDriveUtilities(BaseModel):
                     metadata=self._extract_meta_data(file),
                 )
             else:
-                raise ValueError(f"Invalide mode '{self.gslide_mode}'")
+                raise ValueError(f"Invalid mode '{self.gslide_mode}'")
 
     def _lazy_load_slides_from_file(self, file: Dict) -> Iterator[Document]:
-        """Load a GSlide. Split each slide to differents documents"""
+        """Load a GSlide. Split each slide to different documents"""
         if file["mimeType"] != "application/vnd.google-apps.presentation":
             logger.warning(f"File with id '{file['id']}' is not a GSlide")
             return
@@ -1575,13 +1611,29 @@ class GoogleDriveAPIWrapper(GoogleDriveUtilities):
     num_results: int = 10
     """ Number of results """
 
+    template: Union[
+        PromptTemplate,
+        Literal[
+            "gdrive-all-in-folder",
+            "gdrive-query",
+            "gdrive-by-name",
+            "gdrive-by-name-in-folder",
+            "gdrive-query-in-folder",
+            "gdrive-mime-type",
+            "gdrive-mime-type-in-folder",
+            "gdrive-query-with-mime-type",
+            "gdrive-query-with-mime-type-and-folder",
+        ],
+        None,
+    ] = "gdrive-query"
+
     @root_validator(pre=True)
     def validate_template(cls, v: Dict[str, Any]) -> Dict[str, Any]:
         folder_id = v.get("folder_id")
 
         if "template" not in v:
             if folder_id:
-                template = get_template("gdrive-by-name-in-folders")
+                template = get_template("gdrive-by-name-in-folder")
             else:
                 template = get_template("gdrive-by-name")
             v["template"] = template
@@ -1624,7 +1676,7 @@ class GoogleDriveAPIWrapper(GoogleDriveUtilities):
                     + f"{GoogleDriveUtilities._snippet_from_page_content(content)}"
                 )
             else:
-                raise ValueError(f"Invalide mode `{self.mode}`")
+                raise ValueError(f"Invalid mode `{self.mode}`")
 
         if not len(snippets):
             return "No document found"
