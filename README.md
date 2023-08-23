@@ -4,5 +4,5 @@ to be validated.
 
 # Install
 ```
-pip install 'git+https://github.com/pprados/exlangchain'
+pip install 'git+https://github.com/pprados/langchain-googledrive'
 ```

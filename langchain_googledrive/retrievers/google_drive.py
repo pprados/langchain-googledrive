@@ -1,9 +1,12 @@
-from typing import Any, Dict, List, Literal, Optional
+from typing import Any, Dict, List, Literal
 
 from pydantic.class_validators import root_validator
 from pydantic.config import Extra
 
-from langchain.callbacks.manager import Callbacks
+from langchain.callbacks.manager import (
+    AsyncCallbackManagerForRetrieverRun,
+    CallbackManagerForRetrieverRun,
+)
 from langchain.schema import BaseRetriever, Document
 
 from ..utilities.google_drive import (
@@ -24,7 +27,7 @@ class GoogleDriveRetriever(GoogleDriveUtilities, BaseRetriever):
 
     class Config:
         extra = Extra.allow
-        allow_mutation = False
+        allow_mutation = True  # deprecated
         underscore_attrs_are_private = True
 
     mode: Literal[
@@ -43,14 +46,8 @@ class GoogleDriveRetriever(GoogleDriveUtilities, BaseRetriever):
             v["template"] = template
         return v
 
-    def get_relevant_documents(
-        self,
-        query: str,
-        *,
-        callbacks: Callbacks = None,
-        tags: Optional[List[str]] = None,
-        metadata: Optional[Dict[str, Any]] = None,
-        **kwargs: Any,
+    def _get_relevant_documents(
+        self, query: str, *, run_manager: CallbackManagerForRetrieverRun
     ) -> List[Document]:
         """Get documents relevant for a query.
 
@@ -63,30 +60,11 @@ class GoogleDriveRetriever(GoogleDriveUtilities, BaseRetriever):
         return list(
             self.lazy_get_relevant_documents(
                 query=query,
-                callbacks=callbacks,
-                tags=tags,
-                metadata=metadata,
-                **kwargs,
+                run_manager=run_manager,
             )
         )
 
-    async def aget_relevant_documents(
-        self,
-        query: str,
-        *,
-        callbacks: Callbacks = None,
-        tags: Optional[List[str]] = None,
-        metadata: Optional[Dict[str, Any]] = None,
-        **kwargs: Any,
+    async def _aget_relevant_documents(
+        self, query: str, *, run_manager: AsyncCallbackManagerForRetrieverRun
     ) -> List[Document]:
-        """Get documents relevant for a query.
-
-        NOT IMPLEMENTED
-
-        Args:
-            query: string to find relevant documents for
-
-        Returns:
-            List of relevant documents
-        """
         raise NotImplementedError("GoogleSearchRun does not support async")
