@@ -12,7 +12,7 @@ packages = [{include = "langchain_googledrive"}]
 python = ">=3.8.1,<4.0"
 langchain = "^0.0.274"
 pydantic= "1.*"
-async-timeout = {version = "^4.0.0", python = "<3.11"}
+#async-timeout = {version = "^4.0.0", python = "<3.11"}
 google-api-python-client ="^2.97"
 google-auth-httplib2 = "^0.1.0"
 google-auth-oauthlib = "^1.0.0"
@@ -46,6 +46,7 @@ pytest-mock  = "^3.10.0"
 pytest-socket = "^0.6.0"
 #syrupy = "^4.0.2"
 unstructured="^0.10.8"
+twine="^4.0.0"
 
 
 #[tool.poetry.group.docs.dependencies]

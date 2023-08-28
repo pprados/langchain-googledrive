@@ -46,17 +46,18 @@ jobs:
           echo version=$(poetry version --short) >> $GITHUB_OUTPUT
       - name: Create Release
         uses: ncipollo/release-action@v1
-        if: ${{ inputs.working-directory == 'libs/langchain' }}
+        if: ${{ inputs.working-directory == '.' }}
         with:
           artifacts: "dist/*"
           token: ${{ secrets.GITHUB_TOKEN }}
-          draft: false
-          generateReleaseNotes: true
+          draft: true
+          prerelease: true
+          generateReleaseNotes: false
           tag: v${{ steps.check-version.outputs.version }}
           commit: master
-      - name: Publish package distributions to PyPI
-        uses: pypa/gh-action-pypi-publish@release/v1
-        with:
-          packages-dir: ${{ inputs.working-directory }}/dist/
-          verbose: true
-          print-hash: true
+#      - name: Publish package distributions to PyPI
+#        uses: pypa/gh-action-pypi-publish@release/v1
+#        with:
+#          packages-dir: ${{ inputs.working-directory }}/dist/
+#          verbose: true
+#          print-hash: true
