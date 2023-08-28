@@ -6,6 +6,7 @@ import pytest
 from pytest_mock import MockerFixture
 
 from langchain_googledrive.document_loaders.google_drive import GoogleDriveLoader
+#from langchain.document_loaders.google_drive import GoogleDriveLoader
 
 from tests.unit_tests.llms.fake_llm import FakeLLM
 from tests.unit_tests.utilities.test_google_drive import (
@@ -13,6 +14,12 @@ from tests.unit_tests.utilities.test_google_drive import (
     google_workspace_installed,
     patch_google_workspace,
 )
+
+try:
+    import unstructured
+    unstructured_installed= True
+except ImportError:
+    unstructured_installed= False
 
 
 @pytest.fixture
@@ -221,6 +228,7 @@ def test_deprecated_service_account_key(google_workspace: MagicMock) -> None:
 
 # Test older ipynb script
 @unittest.skipIf(not google_workspace_installed, "Google api not installed")
+@unittest.skipIf(not unstructured_installed, "Unstructured api not installed")
 def test_old_ipynb(google_workspace: MagicMock) -> None:
     # Step 1
     loader = GoogleDriveLoader(

@@ -14,9 +14,9 @@ make test
 # Features:
 
 Langchain component:
-- document_loaders
-- retrievers
-- toolkits
+- [Document Loaders]([docs/extras/document_loaders/google_drive.ipynb])
+- [Retrievers]([docs/extras/retrivers/google_drive.ipynb])
+- [Toolkits]([docs/extras/toolkits/google_drive.ipynb])
 
 Fully compatible with Google Drive API
 - Manage file in trash
@@ -35,12 +35,8 @@ Fully compatible with Google Drive API
 - Convert GDoc, GSheet and GSlide with differents modes
     - Extract text, bullet point, table, titles, links
 
-# Sample
-- [Document Loaders]([docs/extras/document_loaders/google_drive.ipynb])
-- [Providers]([docs/extras/providers/google_drive.mdx])
-- [Retrievers]([docs/extras/retrivers/google_drive.ipynb])
-- [Toolkits]([docs/extras/toolkits/google_drive.ipynb])
-- 
+  
 # langchain Pull-request
-I couldn't get a [pull-request](https://github.com/hwchase17/langchain/pull/5135)  accepted because 
+I couldn't get a [pull-request](https://github.com/hwchase17/langchain/pull/5135) accepted because 
 the project is too big.
+Sorry for that.
