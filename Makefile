@@ -1,3 +1,4 @@
+SHELL=/bin/bash
 .PHONY: all format lint test tests test_watch integration_tests docker_tests help extended_tests
 
 # Default target executed when no arguments are given to make.
@@ -52,18 +53,19 @@ docs_build:
 	docs/.local_build.sh
 
 docs_clean:
-	rm -r docs/_dist
+	rm -rf docs/_dist
 
 docs_linkcheck:
 	poetry run linkchecker docs/_dist/docs_skeleton/ --ignore-url node_modules
 
 api_docs_build:
-	poetry run python docs/api_reference/create_api_rst.py
-	cd docs/api_reference && poetry run make html
+#	poetry run python docs/api_reference/create_api_rst.py
+#	cd docs/api_reference && poetry run make html
 
 api_docs_clean:
-	rm -f docs/api_reference/api_reference.rst
-	cd docs/api_reference && poetry run make clean
+#	rm -f docs/api_reference/api_reference.rst
+#	cd docs/api_reference && poetry run make clean
+
 
 api_docs_linkcheck:
 	poetry run linkchecker docs/api_reference/_build/html/index.html
@@ -128,3 +130,38 @@ else
 		$(shell find dist -type f \( -name "*.whl" -or -name '*.gz' \) -and ! -iname "*dev*" )
 
 endif
+
+
+SRC=../langchain/libs/langchain/langchain
+DST=langchain_googledrive
+SRC_TEST=../langchain/libs/langchain/tests/unit_tests
+DST_TEST=tests/unit_tests
+SRC_DOC=../langchain/docs/extras/integrations
+DST_DOC=docs/extras/integrations
+
+.PHONY: sync
+sync:
+	cp $(SRC)/document_loaders/google_drive.py $(DST)/document_loaders/google_drive.py
+	cp $(SRC)/retrievers/google_drive.py       $(DST)/retrievers/google_drive.py
+	cp $(SRC)/tools/google_drive/tool.py       $(DST)/tools/google_drive/tool.py
+	cp $(SRC)/utilities/google_drive.py        $(DST)/utilities/google_drive.py
+
+	cp $(SRC_TEST)/document_loaders/test_google_drive.py 	$(DST_TEST)/document_loaders/
+	cp $(SRC_TEST)/retrievers/test_google_drive.py 			$(DST_TEST)/retrievers/
+	cp $(SRC_TEST)/utilities/test_google_drive.py 			$(DST_TEST)/utilities/
+	cp -r $(SRC_TEST)/utilities/examples/* 					$(DST_TEST)/utilities/examples/
+	cp $(SRC_TEST)/llms/fake* 								$(DST_TEST)/llms
+	cp $(SRC_TEST)/llms/__init__* 							$(DST_TEST)/llms
+	cp $(SRC_TEST)/callbacks/fake* 							$(DST_TEST)/callbacks
+	cp $(SRC_TEST)/callbacks/__init__* 						$(DST_TEST)/callbacks
+
+	cp $(SRC_DOC)/document_loaders/google_drive.ipynb 		$(DST_DOC)/document_loaders/google_drive.ipynb
+	cp $(SRC_DOC)/providers/google_drive.mdx 				$(DST_DOC)/providers/google_drive.mdx
+	cp $(SRC_DOC)/retrievers/google_drive.ipynb 			$(DST_DOC)/retrievers/google_drive.ipynb
+	cp $(SRC_DOC)/toolkits/google_drive.ipynb 				$(DST_DOC)/toolkits/google_drive.ipynb
+
+	find . -type f -name '*.py' | xargs sed -i 's/langchain.document_loaders.google_drive/langchain_googledrive.document_loaders.google_drive/g'
+	find . -type f -name '*.py' | xargs sed -i 's/langchain.retrievers.google_drive/langchain_googledrive.retrievers.google_drive/g'
+	find . -type f -name '*.py' | xargs sed -i 's/from langchain.utilities import GoogleDriveAPIWrapper/from langchain_googledrive.utilities import GoogleDriveAPIWrapper/g'
+	find . -type f -name '*.py' | xargs sed -i 's/from langchain.utilities.google_drive/from langchain_googledrive.utilities.google_drive/g'
+

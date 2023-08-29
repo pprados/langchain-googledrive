@@ -5,8 +5,8 @@ from unittest.mock import MagicMock
 import pytest
 from pytest_mock import MockerFixture
 
+#from langchain_googledrive.document_loaders.google_drive import GoogleDriveLoader
 from langchain_googledrive.document_loaders.google_drive import GoogleDriveLoader
-#from langchain.document_loaders.google_drive import GoogleDriveLoader
 
 from tests.unit_tests.llms.fake_llm import FakeLLM
 from tests.unit_tests.utilities.test_google_drive import (

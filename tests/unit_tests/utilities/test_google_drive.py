@@ -11,10 +11,10 @@ from pytest_mock import MockerFixture
 
 from langchain import PromptTemplate
 from langchain.schema import Document
+#from langchain_googledrive.utilities import GoogleDriveAPIWrapper
 from langchain_googledrive.utilities import GoogleDriveAPIWrapper
-#from langchain.utilities import GoogleDriveAPIWrapper
+#from langchain_googledrive.utilities.google_drive import TYPE_CONV_MAPPING, GoogleDriveUtilities
 from langchain_googledrive.utilities.google_drive import TYPE_CONV_MAPPING, GoogleDriveUtilities
-#from langchain.utilities.google_drive import TYPE_CONV_MAPPING, GoogleDriveUtilities
 
 try:
     from google.auth.transport.requests import Request  # noqa: F401
@@ -318,7 +318,7 @@ def patch_google_workspace(
     import logging
 
     log_level = logging.DEBUG
-    logging.getLogger("langchain.document_loaders.google_drive").setLevel(log_level)
+    logging.getLogger("langchain_googledrive.document_loaders.google_drive").setLevel(log_level)
     logging.getLogger("langchain.utilities.google_drive").setLevel(log_level)
     logging.getLogger("langchain.tools.google_drive").setLevel(log_level)
 

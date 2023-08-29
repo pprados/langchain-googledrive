@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "langchain-googledrive"
-version = "0.0.274"
+version = "0.0.275"
 description = "This is a temporary project while I wait for my langchain [pull-request](https://github.com/hwchase17/langchain/pull/5135) to be validated."
 authors = ["Philippe PRADOS"]
 license = "MIT License"
@@ -10,12 +10,12 @@ packages = [{include = "langchain_googledrive"}]
 
 [tool.poetry.dependencies]
 python = ">=3.8.1,<4.0"
-langchain = "^0.0.274"
+langchain = ">=0.0.275"
 pydantic= "1.*"
 #async-timeout = {version = "^4.0.0", python = "<3.11"}
 google-api-python-client ="^2.97"
-google-auth-httplib2 = "^0.1.0"
-google-auth-oauthlib = "^1.0.0"
+google-auth-httplib2 = "*"
+google-auth-oauthlib = "*"
 
 
 [tool.poetry.group.dev]
