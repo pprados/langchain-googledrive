@@ -14,9 +14,9 @@ make test
 # Features:
 
 Langchain component:
-- [Document Loaders]([docs/extras/document_loaders/google_drive.ipynb])
-- [Retrievers]([docs/extras/retrivers/google_drive.ipynb])
-- [Toolkits]([docs/extras/toolkits/google_drive.ipynb])
+- [Document Loaders]([docs/extras/integrations/document_loaders/google_drive.ipynb])
+- [Retrievers]([docs/extras/integrations/retrivers/google_drive.ipynb])
+- [Toolkits]([docs/extras/integrations/toolkits/google_drive.ipynb])
 
 Fully compatible with Google Drive API
 - Manage file in trash
@@ -32,7 +32,7 @@ Fully compatible with Google Drive API
 - Use environment variable for reference an API tokens
 - Manage different king of strange state with Google File (absence of URL, etc.)
 - Use fully lazy strategy to save memory
-- Convert GDoc, GSheet and GSlide with differents modes
+- Convert GDoc, GSheet and GSlide with different modes
     - Extract text, bullet point, table, titles, links
 
   

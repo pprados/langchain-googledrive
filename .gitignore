@@ -16,3 +16,4 @@ __pycache__
 .idea/
 dist/
 *.egg-info/
+docs/_dist
