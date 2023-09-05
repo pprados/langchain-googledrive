@@ -14,16 +14,16 @@ make test
 # Features:
 
 Langchain component:
-- [Document Loaders]([docs/extras/integrations/document_loaders/google_drive.ipynb])
-- [Retrievers]([docs/extras/integrations/retrivers/google_drive.ipynb])
-- [Toolkits]([docs/extras/integrations/toolkits/google_drive.ipynb])
+- [Document Loaders](docs/extras/integrations/document_loaders/google_drive.ipynb)
+- [Retrievers](docs/extras/integrations/retrievers/google_drive.ipynb)
+- [Toolkits](docs/extras/integrations/toolkits/google_drive.ipynb)
 
 Fully compatible with Google Drive API
 - Manage file in trash
 - Manage shortcut
 - Manage file description
 - Paging with request GDrive list()
-- Multiple kind of template for request GDrive
+- Multiple kinds of template for request GDrive
 - Convert a lot of mime type (can be configured). The list is adjusted according to the packages availables
 - Can use only the description of files, without loading and conversion of the body
 - Lambda fine filter
@@ -33,7 +33,7 @@ Fully compatible with Google Drive API
 - Manage different king of strange state with Google File (absence of URL, etc.)
 - Use fully lazy strategy to save memory
 - Convert GDoc, GSheet and GSlide with different modes
-    - Extract text, bullet point, table, titles, links
+    - Extract text, bullet point, tables, titles, links
 
   
 # langchain Pull-request
