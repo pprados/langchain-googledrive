@@ -359,12 +359,12 @@ def _init_templates() -> Dict[str, PromptTemplate]:
         "gdrive-query-with-mime-type": MyPromptTemplate(
             input_variables=["query", "mime_type"],
             template="(fullText contains '{query}' "
-            "and mime_type = '{mime_type}') "
+            "and mimeType = '{mime_type}') "
             "and trashed=false",
         ),
         "gdrive-query-with-mime-type-and-folder": MyPromptTemplate(
             input_variables=["query", "mime_type", "folder_id"],
-            template="((fullText contains '{query}') and mime_type = '{mime_type}')"
+            template="((fullText contains '{query}') and mimeType = '{mime_type}') "
             "and '{folder_id}' in parents "
             "and trashed=false",
         ),
