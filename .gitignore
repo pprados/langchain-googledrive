@@ -17,3 +17,4 @@ __pycache__
 dist/
 *.egg-info/
 docs/_dist
+.ipynb_checkpoints
