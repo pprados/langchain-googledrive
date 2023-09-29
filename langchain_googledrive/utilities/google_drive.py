@@ -740,7 +740,12 @@ class GoogleDriveUtilities(Serializable, BaseModel):
                 "to use the Google Drive loader."
             )
 
-        if api_file:
+        if "GOOGLE_ACCOUNT_SERVICE_KEY" in os.environ:
+            return service_account.Credentials.from_service_account_info(
+                json.loads(os.environ['GOOGLE_ACCOUNT_SERVICE_KEY']),
+                scopes=scopes
+            )
+        elif api_file:
             with io.open(api_file, "r", encoding="utf-8-sig") as json_file:
                 data = json.load(json_file)
             if "installed" in data:
