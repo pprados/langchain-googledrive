@@ -38,8 +38,6 @@ from langchain.pydantic_v1 import (
     validator,
 )
 from langchain.schema import Document
-
-# from langchain.document_loaders.base import BaseLoader
 from langchain.text_splitter import TextSplitter
 
 
@@ -213,10 +211,9 @@ def default_conv_loader(
 
     try:
         import pypandoc  # type: ignore
-
         from langchain.document_loaders import UnstructuredRTFLoader
 
-        pypandoc.ensure_pandoc_installed()
+        # pypandoc.ensure_pandoc_installed()
 
         mime_types_mapping.update(
             {
@@ -227,7 +224,6 @@ def default_conv_loader(
         logger.info("Ignore RTF for GDrive (use `pip install pypandoc_binary`)")
     try:
         import unstructured  # noqa: F401 , type: ignore
-
         from langchain.document_loaders import (
             UnstructuredEPubLoader,
             UnstructuredFileLoader,
@@ -416,6 +412,8 @@ class GoogleDriveUtilities(Serializable, BaseModel):
     The environment variable `GOOGLE_ACCOUNT_FILE` may be set to reference this file.
     For more information, see [here]
     (https://developers.google.com/workspace/guides/auth-overview).
+    Or, the environment variable `GOOGLE_ACCOUNT_KEY` may be set with the body of
+    the file.
 
     All parameter compatible with Google [`list()`]
     (https://developers.google.com/drive/api/v3/reference/files/list)
@@ -472,25 +470,37 @@ class GoogleDriveUtilities(Serializable, BaseModel):
         """Google workspakce files interface"""
         return self._files
 
+    service_account_key: Optional[Path] = None
+    """DEPRECATED Path to the service account key file."""
+    credentials_path: Optional[Path] = None
+    """DEPRECATED Path to the credentials file."""
+
     gdrive_api_file: Optional[FilePath]
     """
     The file to use to connect to the google api or use 
-    `os.environ["GOOGLE_ACCOUNT_FILE"]`. May be a user or service json file"""
+    `os.environ["GOOGLE_ACCOUNT_FILE"]`. 
+    May be a user or service json file.
+    It's possible to use `GOOGLE_ACCOUNT_KEY` with json body."""
 
     not_data = uuid4()
 
     @validator("gdrive_api_file", always=True)
-    def validate_api_file(cls, api_file: Optional[FilePath]) -> FilePath:
+    def validate_api_file(cls, api_file: Optional[FilePath]) -> Optional[FilePath]:
         if not api_file:
             env_api_file = os.environ.get("GOOGLE_ACCOUNT_FILE")
             if not env_api_file:
-                raise ValueError("set GOOGLE_ACCOUNT_FILE environment variable")
+                if "GOOGLE_ACCOUNT_KEY" not in os.environ:
+                    raise ValueError(
+                        "set GOOGLE_ACCOUNT_FILE or GOOGLE_ACCOUNT_KEY "
+                        "environment variable"
+                    )
+                api_file = None
             else:
                 api_file = Path(env_api_file)
         else:
             if api_file is None:
                 raise ValueError("gdrive_api_file must be set")
-        if not api_file.exists():
+        if api_file and not api_file.exists():
             raise ValueError(f"Api file '{api_file}' does not exist")
         return api_file
 
@@ -717,11 +727,11 @@ class GoogleDriveUtilities(Serializable, BaseModel):
         "supportsTeamDrives",
     }
 
-    def _load_credentials(self, api_file: Optional[Path], scopes: List[str]) -> Any:
+    def _load_credentials(self, scopes: List[str]) -> Any:
         """Load credentials.
 
          Args:
-            api_file: The user or services json file
+            scope: The scope to use
 
         Returns:
             credentials.
@@ -740,43 +750,41 @@ class GoogleDriveUtilities(Serializable, BaseModel):
                 "to use the Google Drive loader."
             )
 
-        if "GOOGLE_ACCOUNT_SERVICE_KEY" in os.environ:
-            return service_account.Credentials.from_service_account_info(
-                json.loads(os.environ['GOOGLE_ACCOUNT_SERVICE_KEY']),
-                scopes=scopes
-            )
-        elif api_file:
-            with io.open(api_file, "r", encoding="utf-8-sig") as json_file:
-                data = json.load(json_file)
-            if "installed" in data:
-                credentials_path = api_file
-                service_account_key = None
-            else:
-                service_account_key = api_file
-                credentials_path = None
+        token_path = None
+        if self.gdrive_api_file:
+            with io.open(self.gdrive_api_file, "r", encoding="utf-8-sig") as json_file:
+                info = json.load(json_file)
+            token_path = self.gdrive_api_file.parent / "token.json"
+        elif "GOOGLE_ACCOUNT_KEY" in os.environ:
+            info = json.loads(os.environ["GOOGLE_ACCOUNT_KEY"])
         else:
-            raise ValueError("Use GOOGLE_ACCOUNT_FILE env. variable.")
+            raise ValueError(
+                "Use GOOGLE_ACCOUNT_FILE or GOOGLE_ACCOUNT_KEY env. variable."
+            )
+
+        if self.gdrive_token_path:
+            token_path = self.gdrive_token_path
 
         # Implicit location of token.json
-        if not self.gdrive_token_path and credentials_path:
-            token_path = credentials_path.parent / "token.json"
+        if not token_path:
+            token_path = Path("./token.json")
 
-        creds = None
-        if service_account_key and service_account_key.exists():
-            return service_account.Credentials.from_service_account_file(
-                str(service_account_key), scopes=scopes
+        if "installed" not in info:  # For user
+            return service_account.Credentials.from_service_account_info(
+                info, scopes=scopes
             )
 
-        if token_path.exists():
-            creds = Credentials.from_authorized_user_file(str(token_path), scopes)
+        creds = (
+            Credentials.from_authorized_user_info(info, scopes)
+            if token_path.exists()
+            else None
+        )
 
         if not creds or not creds.valid:
-            if creds and creds.expired and creds.refresh_token:
+            if creds and (creds.expired or creds.refresh_token):
                 creds.refresh(Request())
             else:
-                flow = InstalledAppFlow.from_client_secrets_file(
-                    str(credentials_path), scopes
-                )
+                flow = InstalledAppFlow.from_client_config(info, scopes)
                 creds = flow.run_local_server(port=0)
             with open(token_path, "w") as token:
                 token.write(creds.to_json())
@@ -850,7 +858,7 @@ class GoogleDriveUtilities(Serializable, BaseModel):
         self._spreadsheets = None
         self._slides = None
 
-        self._creds = self._load_credentials(Path(self.gdrive_api_file), self.scopes)
+        self._creds = self._load_credentials(self.scopes)
 
         from googleapiclient.discovery import build  # type: ignore
 
@@ -1189,7 +1197,6 @@ class GoogleDriveUtilities(Serializable, BaseModel):
             Document
         """
         from googleapiclient.errors import HttpError
-
         from langchain import PromptTemplate as OriginalPromptTemplate
 
         if not query and "query" in self._kwargs:

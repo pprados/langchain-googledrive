@@ -1,11 +1,12 @@
+import os
 import unittest
 from pathlib import Path
+from unittest import mock
 from unittest.mock import MagicMock
 
 import pytest
 from pytest_mock import MockerFixture
 
-# from langchain_googledrive.document_loaders.google_drive import GoogleDriveLoader
 from langchain_googledrive.document_loaders.google_drive import GoogleDriveLoader
 from tests.unit_tests.llms.fake_llm import FakeLLM
 
@@ -22,6 +23,13 @@ try:
 except ImportError:
     unstructured_installed = False
 
+_credential = str(
+    Path(__file__).parent.parent / "utilities" / "examples" / "gdrive_credentials.json"
+)
+_services = str(
+    Path(__file__).parent.parent / "utilities" / "examples" / "gdrive_service.json"
+)
+
 
 @pytest.fixture
 def google_workspace(mocker: MockerFixture) -> MagicMock:
@@ -31,14 +39,12 @@ def google_workspace(mocker: MockerFixture) -> MagicMock:
 
 
 @unittest.skipIf(not google_workspace_installed, "Google api not installed")
+@mock.patch.dict(os.environ, {"GOOGLE_ACCOUNT_FILE": _credential}, clear=True)
 def test_load_returns_list_of_google_documents_single(
     google_workspace: MagicMock,
 ) -> None:
     loader = GoogleDriveLoader(
-        api_file=Path(__file__).parent.parent
-        / "utilities"
-        / "examples"
-        / "gdrive_credentials.json",
+        api_file=Path(_credential),
         folder_id="999",
     )
     assert loader.mode == "documents"  # Check default value
@@ -46,23 +52,11 @@ def test_load_returns_list_of_google_documents_single(
     assert loader.gslide_mode == "single"  # Check default value
 
 
-# @unittest.skipIf(not google_workspace_installed, "Google api not installed")
-# def test_no_path(mocker,google_workspace) -> None:
-#     import os
-#     mocker.patch.dict(os.environ,{},clear=True)
-#     loader = GoogleDriveLoader(
-#         template="gdrive-all-in-folder",
-#     )
-#     assert loader.gdrive_api_file == Path.home() / ".credentials" / "keys.json"
-
-
 @unittest.skipIf(not google_workspace_installed, "Google api not installed")
+@mock.patch.dict(os.environ, {"GOOGLE_ACCOUNT_FILE": _credential}, clear=True)
 def test_folder_id(google_workspace: MagicMock) -> None:
     loader = GoogleDriveLoader(
-        api_file=Path(__file__).parent.parent
-        / "utilities"
-        / "examples"
-        / "gdrive_credentials.json",
+        api_file=Path(_credential),
         folder_id="999",
     )
     docs = loader.load()
@@ -70,12 +64,10 @@ def test_folder_id(google_workspace: MagicMock) -> None:
 
 
 @unittest.skipIf(not google_workspace_installed, "Google api not installed")
+@mock.patch.dict(os.environ, {}, clear=True)
 def test_query(google_workspace: MagicMock) -> None:
     loader = GoogleDriveLoader(
-        gdrive_api_file=Path(__file__).parent.parent
-        / "utilities"
-        / "examples"
-        / "gdrive_credentials.json",
+        gdrive_api_file=Path(_credential),
         query="",
         template="gdrive-query",
     )
@@ -84,12 +76,10 @@ def test_query(google_workspace: MagicMock) -> None:
 
 
 @unittest.skipIf(not google_workspace_installed, "Google api not installed")
+@mock.patch.dict(os.environ, {"GOOGLE_ACCOUNT_FILE": _credential}, clear=True)
 def test_update_description_with_summary(google_workspace: MagicMock) -> None:
     loader = GoogleDriveLoader(
-        api_file=Path(__file__).parent.parent
-        / "utilities"
-        / "examples"
-        / "gdrive_credentials.json",
+        api_file=Path(_credential),
         file_ids=["1", "2"],
         scopes=["https://www.googleapis.com/auth/drive"],
     )
@@ -111,14 +101,75 @@ def test_update_description_with_summary(google_workspace: MagicMock) -> None:
 ## --------- Test deprecated API --------------
 
 
+# @deprected
 @unittest.skipIf(not google_workspace_installed, "Google api not installed")
+@mock.patch.dict(os.environ, {}, clear=True)
+def test_auth_credentials_path(
+    google_workspace: MagicMock,
+) -> None:
+    GoogleDriveLoader(
+        credentials_path=Path(_credential),
+        template="gdrive-all-in-folder",
+        folder_id="root",
+        gsheet_mode="single",
+        gslide_mode="single",
+    )
+    assert google_workspace.credentials.from_authorized_user_info.called
+
+
+# @deprected
+@unittest.skipIf(not google_workspace_installed, "Google api not installed")
+@mock.patch.dict(os.environ, {}, clear=True)
+def test_auth_service_account_key(
+    google_workspace: MagicMock,
+) -> None:
+    GoogleDriveLoader(
+        service_account_key=Path(_services),
+        template="gdrive-all-in-folder",
+        folder_id="root",
+        gsheet_mode="single",
+        gslide_mode="single",
+    )
+    assert google_workspace.service_account.Credentials.from_service_account_info.called
+
+
+@unittest.skipIf(not google_workspace_installed, "Google api not installed")
+@mock.patch.dict(os.environ, {}, clear=True)
+def test_auth_gdrive_api_file_user(
+    google_workspace: MagicMock,
+) -> None:
+    GoogleDriveLoader(
+        gdrive_api_file=Path(_credential),
+        template="gdrive-all-in-folder",
+        folder_id="root",
+        gsheet_mode="single",
+        gslide_mode="single",
+    )
+    assert google_workspace.credentials.from_authorized_user_info.called
+
+
+@unittest.skipIf(not google_workspace_installed, "Google api not installed")
+@mock.patch.dict(os.environ, {}, clear=True)
+def test_auth_gdrive_api_file_service(
+    google_workspace: MagicMock,
+) -> None:
+    GoogleDriveLoader(
+        gdrive_api_file=Path(_services),
+        template="gdrive-all-in-folder",
+        folder_id="root",
+        gsheet_mode="single",
+        gslide_mode="single",
+    )
+    assert google_workspace.service_account.Credentials.from_service_account_info.called
+
+
+# %%
+@unittest.skipIf(not google_workspace_installed, "Google api not installed")
+@mock.patch.dict(os.environ, {"GOOGLE_ACCOUNT_FILE": _credential}, clear=True)
 def test_deprecated_document_ids(google_workspace: MagicMock) -> None:
     with pytest.deprecated_call() as w:
         loader = GoogleDriveLoader(
-            # api_file=Path(__file__).parent.parent
-            # / "utilities"
-            # / "examples"
-            # / "gdrive_credentials.json",
+            # api_file=Path(_credential),
             document_ids=["1", "1"],
         )
         docs = loader.load()
@@ -129,13 +180,11 @@ def test_deprecated_document_ids(google_workspace: MagicMock) -> None:
 
 
 @unittest.skipIf(not google_workspace_installed, "Google api not installed")
+@mock.patch.dict(os.environ, {"GOOGLE_ACCOUNT_FILE": _credential}, clear=True)
 def test_deprecated_files_ids(google_workspace: MagicMock) -> None:
     with pytest.deprecated_call() as w:
         loader = GoogleDriveLoader(
-            # api_file=Path(__file__).parent.parent
-            # / "utilities"
-            # / "examples"
-            # / "gdrive_credentials.json",
+            # api_file=Path(_credential),
             file_ids=["1", "2"],
         )
         docs = loader.load()
@@ -146,6 +195,7 @@ def test_deprecated_files_ids(google_workspace: MagicMock) -> None:
 
 
 @unittest.skipIf(not google_workspace_installed, "Google api not installed")
+@mock.patch.dict(os.environ, {"GOOGLE_ACCOUNT_FILE": _credential}, clear=True)
 def test_deprecated_file_loader_cls(google_workspace: MagicMock) -> None:
     from langchain.document_loaders import UnstructuredFileIOLoader
 
@@ -164,6 +214,7 @@ def test_deprecated_file_loader_cls(google_workspace: MagicMock) -> None:
 
 
 @unittest.skipIf(not google_workspace_installed, "Google api not installed")
+@mock.patch.dict(os.environ, {"GOOGLE_ACCOUNT_FILE": _credential}, clear=True)
 def test_deprecated_files_ids_and_load_trashed_files(
     google_workspace: MagicMock,
 ) -> None:
@@ -180,6 +231,7 @@ def test_deprecated_files_ids_and_load_trashed_files(
 
 
 @unittest.skipIf(not google_workspace_installed, "Google api not installed")
+@mock.patch.dict(os.environ, {"GOOGLE_ACCOUNT_FILE": _credential}, clear=True)
 def test_deprecated_file_types(google_workspace: MagicMock) -> None:
     with pytest.deprecated_call() as w:
         loader = GoogleDriveLoader(
@@ -202,6 +254,7 @@ def test_deprecated_file_types(google_workspace: MagicMock) -> None:
 
 
 @unittest.skipIf(not google_workspace_installed, "Google api not installed")
+@mock.patch.dict(os.environ, {}, clear=True)
 def test_deprecated_service_account_key(google_workspace: MagicMock) -> None:
     with pytest.deprecated_call() as w:
         file_id = "1"
@@ -230,6 +283,7 @@ def test_deprecated_service_account_key(google_workspace: MagicMock) -> None:
 # Test older ipynb script
 @unittest.skipIf(not google_workspace_installed, "Google api not installed")
 @unittest.skipIf(not unstructured_installed, "Unstructured api not installed")
+@mock.patch.dict(os.environ, {"GOOGLE_ACCOUNT_FILE": _credential}, clear=True)
 def test_old_ipynb(google_workspace: MagicMock) -> None:
     # Step 1
     loader = GoogleDriveLoader(

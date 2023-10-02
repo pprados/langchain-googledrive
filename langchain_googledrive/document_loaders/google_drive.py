@@ -1,8 +1,6 @@
 import itertools
 import logging
-import os
 import warnings
-from pathlib import Path
 from typing import (
     Any,
     Dict,
@@ -136,7 +134,6 @@ class GoogleDriveLoader(BaseLoader, GoogleDriveUtilities):
     ) -> Dict[str, Any]:
         service_account_key = values.get("service_account_key")
         credentials_path = values.get("credentials_path")
-        api_file = values.get("gdrive_api_file")
 
         if service_account_key:
             warnings.warn(
@@ -160,6 +157,10 @@ class GoogleDriveLoader(BaseLoader, GoogleDriveUtilities):
             )
         if service_account_key and credentials_path:
             raise ValueError("Select only service_account_key or credentials_path")
+        if service_account_key:
+            values["gdrive_api_file"] = service_account_key
+        if credentials_path:
+            values["gdrive_api_file"] = credentials_path
 
         folder_id = values.get("folder_id")
         document_ids = values.get("document_ids")
@@ -170,22 +171,6 @@ class GoogleDriveLoader(BaseLoader, GoogleDriveUtilities):
                 "Cannot specify both folder_id and document_ids nor "
                 "folder_id and file_ids"
             )
-
-        # To be compatible with the old approach
-        if not api_file:
-            api_file = (
-                Path(os.environ["GOOGLE_ACCOUNT_FILE"])
-                if "GOOGLE_ACCOUNT_FILE" in os.environ
-                else None
-            )
-            # Deprecated: To be compatible with the old approach of authentication
-            if service_account_key:
-                api_file = service_account_key
-            elif credentials_path:
-                api_file = credentials_path
-            elif not api_file:
-                api_file = Path.home() / ".credentials" / "keys.json"
-            values["gdrive_api_file"] = api_file
 
         return values
 
@@ -241,7 +226,6 @@ class GoogleDriveLoader(BaseLoader, GoogleDriveUtilities):
             kwargs: Others parameters for the template (verbose, prompt, etc).
         """
         from googleapiclient.errors import HttpError  # type: ignore
-
         from langchain.chains.summarize import load_summarize_chain
 
         if "https://www.googleapis.com/auth/drive" not in self._creds.scopes:

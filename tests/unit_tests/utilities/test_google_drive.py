@@ -1,16 +1,17 @@
 import io
 import json
+import os
 import unittest
 from pathlib import Path
 from typing import Any, Callable, Dict, List, cast
+from unittest import mock
 from unittest.mock import MagicMock
 
 import pytest
-from pytest_mock import MockerFixture
-
 from langchain import PromptTemplate
 from langchain.pydantic_v1 import BaseModel
 from langchain.schema import Document
+from pytest_mock import MockerFixture
 
 # from langchain_googledrive.utilities import GoogleDriveAPIWrapper
 from langchain_googledrive.utilities import GoogleDriveAPIWrapper
@@ -29,6 +30,10 @@ try:
     google_workspace_installed = True
 except ImportError:
     google_workspace_installed = False
+
+_credential = str(Path(__file__).parent / "examples" / "gdrive_credentials.json")
+_services = str(Path(__file__).parent / "examples" / "gdrive_service.json")
+_token = str(Path(__file__).parent / "examples" / "token.json")
 
 SCOPES = [
     # See https://developers.google.com/identity/protocols/oauth2/scopes
@@ -168,42 +173,6 @@ _application_word = {
     "modifiedTime": "2023-01-01T00:00:00.0Z",
     "sha256Checksum": "0000",
 }
-# _application_excel = {
-#     "id": "100",
-#     "name": "vnd.openxmlformats-officedocument.spreadsheetml.sheet.xlsx",
-#     "mimeType": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-#     "owners": [{"displayName": "John Do"}],
-#     "webViewLink": "https://docs.google.com/spreadsheets/d/100/edit?"
-#     "usp=drivesdk&rtpof=true&sd=true",
-#     "webContentLink": "https://drive.google.com/uc?id=100&export=download",
-#     "description": "A MSExcel",
-#     "modifiedTime": "2023-01-01T00:00:00.0Z",
-#     "sha256Checksum": "0000",
-# }
-# _application_powerpoint = {
-#     "id": "103",
-#     "name": "vnd.openxmlformats-officedocument.presentationml.presentation.pptx",
-#     "mimeType": "application/vnd.openxmlformats-officedocument."
-#     "presentationml.presentation",
-#     "owners": [{"displayName": "John Do"}],
-#     "webViewLink": "https://docs.google.com/presentation/d/103/edit?"
-#     "usp=drivesdk&rtpof=true&sd=true",
-#     "webContentLink": "https://drive.google.com/uc?id=103&export=download",
-#     "description": "A MSPowerpoint",
-#     "modifiedTime": "2023-01-01T00:00:00.0Z",
-#     "sha256Checksum": "0000",
-# }
-# _application_ods = {
-#     "id": "104",
-#     "name": "vnd.oasis.opendocument.spreadsheet.ods",
-#     "mimeType": "application/vnd.oasis.opendocument.spreadsheet",
-#     "owners": [{"displayName": "John Do"}],
-#     "webViewLink": "https://drive.google.com/file/d/104/view?usp=drivesdk",
-#     "webContentLink": "https://drive.google.com/uc?id=104&export=download",
-#     "description": "A Open Office spreadsheet",
-#     "modifiedTime": "2023-01-01T00:00:00.0Z",
-#     "sha256Checksum": "0000",
-# }
 _application_odt = {
     "id": "105",
     "name": "vnd.oasis.opendocument.text.odt",
@@ -215,60 +184,6 @@ _application_odt = {
     "modifiedTime": "2023-01-01T00:00:00.0Z",
     "sha256Checksum": "0000",
 }
-# _application_odp = {
-#     "id": "109",
-#     "name": "vnd.oasis.opendocument.presentation.odp",
-#     "mimeType": "application/vnd.oasis.opendocument.presentation",
-#     "owners": [{"displayName": "John Do"}],
-#     "webViewLink": "https://drive.google.com/file/d/109/view?usp=drivesdk",
-#     "webContentLink": "https://drive.google.com/uc?id=109&export=download",
-#     "description": "A OpenDocument Presentation",
-#     "modifiedTime": "2023-01-01T00:00:00.0Z",
-#     "sha256Checksum": "0000",
-# }
-#
-# _application_rtf = {
-#     "id": "107",
-#     "name": "rtf.rtf",
-#     "mimeType": "application/rtf",
-#     "owners": [{"displayName": "John Do"}],
-#     "webViewLink": "https://drive.google.com/file/d/107/view?usp=drivesdk",
-#     "webContentLink": "https://drive.google.com/uc?id=107&export=download",
-#     "description": "A RTF",
-#     "modifiedTime": "2023-01-01T00:00:00.0Z",
-#     "sha256Checksum": "0000",
-# }
-# _application_pdf = {
-#     "id": "108",
-#     "name": "pdf.pdf",
-#     "mimeType": "application/pdf",
-#     "owners": [{"displayName": "John Do"}],
-#     "webViewLink": "https://drive.google.com/file/d/108/view?usp=drivesdk",
-#     "webContentLink": "https://drive.google.com/uc?id=108&export=download",
-#     "description": "A PDF",
-#     "modifiedTime": "2023-01-01T00:00:00.0Z",
-#     "sha256Checksum": "0000",
-# }
-# _application_json = {
-#     "id": "101",
-#     "name": "json.json",
-#     "mimeType": "application/json",
-#     "owners": [{"displayName": "John Do"}],
-#     "webViewLink": "https://drive.google.com/file/d/101/view?usp=drivesdk",
-#     "webContentLink": "https://drive.google.com/uc?id=101&export=download",
-#     "modifiedTime": "2023-01-01T00:00:00.0Z",
-#     "sha256Checksum": "0000",
-# }
-# _application_epub = {
-#     "id": "102",
-#     "name": "epub+zip.epub",
-#     "mimeType": "application/epub+zip",
-#     "owners": [{"displayName": "John Do"}],
-#     "webViewLink": "https://drive.google.com/file/d/102/view?usp=drivesdk",
-#     "webContentLink": "https://drive.google.com/uc?id=102&export=download",
-#     "modifiedTime": "2023-01-01T00:00:00.0Z",
-#     "sha256Checksum": "0000",
-# }
 
 _all_files = {
     _application_vnd_doc["id"]: _application_vnd_doc,
@@ -279,15 +194,7 @@ _all_files = {
     _application_vnd_drawing["id"]: _application_vnd_drawing,
     _application_vnd_shortcut["id"]: _application_vnd_shortcut,
     _application_word["id"]: _application_word,
-    # _application_excel["id"]: _application_excel,
-    # _application_powerpoint["id"]: _application_powerpoint,
-    # _application_ods["id"]: _application_ods,
     _application_odt["id"]: _application_odt,
-    # _application_odp["id"]: _application_odp,
-    # _application_rtf["id"]: _application_rtf,
-    # _application_pdf["id"]: _application_pdf,
-    # _application_json["id"]: _application_json,
-    # _application_epub["id"]: _application_epub,
 }
 
 gdrive_docs = list(
@@ -331,17 +238,13 @@ def patch_google_workspace(
     mock_service_account_credentials = mocker.patch(
         "google.oauth2.service_account.Credentials"
     )
-    mock_service_account_credentials.from_service_account_file.return_value = MockCred(
+    mock_service_account_credentials.from_service_account_info.return_value = MockCred(
         scopes=SCOPES
     )
-    mock_service_account_credentials.from_authorized_user_file.return_value = MockCred(
-        scopes=SCOPES
-    )
-    mock_credentials = mocker.patch("google.oauth2.credentials.Credentials")
-    mock_credentials.from_service_account_file.return_value = MockCred(scopes=SCOPES)
-    mock_credentials.from_authorized_user_file.return_value = MockCred(scopes=SCOPES)
 
-    # Patch Google API http
+    mock_credentials = mocker.patch("google.oauth2.credentials.Credentials")
+    mock_credentials.from_authorized_user_info.return_value = MockCred(scopes=SCOPES)
+    # mocker.patch("pathlib.Path.exists").return_value = True
     mock_media_io_download = mocker.patch("googleapiclient.http.MediaIoBaseDownload")
 
     def patch_media_download(*args: List[Any], **kwargs: Any) -> MagicMock:
@@ -418,15 +321,92 @@ def patch_google_workspace(
             assert False, f"serviceName `{args[0]}` not supported"
 
     mock_googleapiclient_discovery_build.side_effect = patch_build
+    mock_googleapiclient_discovery_build.credentials = mock_credentials
+    mock_googleapiclient_discovery_build.service_account = service_account
     return mock_googleapiclient_discovery_build
 
 
+@unittest.skipIf(not google_workspace_installed, "Google api not installed")
+@mock.patch.dict(os.environ, {"GOOGLE_ACCOUNT_FILE": _credential})
+def test_auth_GOOGLE_ACCOUNT_FILE_user(
+    google_workspace: MagicMock,
+) -> None:
+    GoogleDriveUtilities(
+        api_file=None,
+        template="gdrive-all-in-folder",
+        folder_id=mime_application_folder,
+        gsheet_mode="single",
+        gslide_mode="single",
+    )
+    assert google_workspace.credentials.from_authorized_user_info.called
+
+
+@unittest.skipIf(not google_workspace_installed, "Google api not installed")
+@mock.patch.dict(os.environ, {"GOOGLE_ACCOUNT_FILE": _services})
+def test_auth_GOOGLE_ACCOUNT_FILE_service(
+    google_workspace: MagicMock,
+) -> None:
+    GoogleDriveUtilities(
+        api_file=None,
+        template="gdrive-all-in-folder",
+        folder_id=mime_application_folder,
+        gsheet_mode="single",
+        gslide_mode="single",
+    )
+    assert google_workspace.service_account.Credentials.from_service_account_info.called
+
+
+@unittest.skipIf(not google_workspace_installed, "Google api not installed")
+def test_auth_GOOGLE_ACCOUNT_KEY_user(
+    google_workspace: MagicMock,
+) -> None:
+    with io.open(
+        _credential,
+        "r",
+        encoding="utf-8-sig",
+    ) as json_file:
+        if "GOOGLE_ACCOUNT_FILE" in os.environ:
+            del os.environ["GOOGLE_ACCOUNT_FILE"]
+        os.environ["GOOGLE_ACCOUNT_KEY"] = json_file.read()
+    GoogleDriveUtilities(
+        gdrive_token_path=_token,
+        template="gdrive-all-in-folder",
+        folder_id=mime_application_folder,
+        gsheet_mode="single",
+        gslide_mode="single",
+    )
+    assert google_workspace.credentials.from_authorized_user_info.called
+
+
+@unittest.skipIf(not google_workspace_installed, "Google api not installed")
+def test_auth_GOOGLE_ACCOUNT_KEY_service(
+    google_workspace: MagicMock,
+) -> None:
+    with io.open(
+        _services,
+        "r",
+        encoding="utf-8-sig",
+    ) as json_file:
+        if "GOOGLE_ACCOUNT_FILE" in os.environ:
+            del os.environ["GOOGLE_ACCOUNT_FILE"]
+        os.environ["GOOGLE_ACCOUNT_KEY"] = json_file.read()
+    GoogleDriveUtilities(
+        gdrive_token_path=_token,
+        template="gdrive-all-in-folder",
+        folder_id=mime_application_folder,
+        gsheet_mode="single",
+        gslide_mode="single",
+    )
+    assert google_workspace.service_account.Credentials.from_service_account_info.called
+
+
+# %%
 @unittest.skipIf(not google_workspace_installed, "Google api not installed")
 def test_load_returns_list_of_google_documents_single(
     google_workspace: MagicMock,
 ) -> None:
     utilities = GoogleDriveUtilities(
-        api_file=Path(__file__).parent / "examples" / "gdrive_credentials.json",
+        api_file=Path(_credential),
         template="gdrive-all-in-folder",
         folder_id=mime_application_folder,
         gsheet_mode="single",
@@ -444,7 +424,7 @@ def test_load_with_gslide_mode_single(mocker: MockerFixture) -> None:
         mocker, [{"nextPageToken": None, "files": [_application_vnd_slide]}]
     )
     utilities = GoogleDriveUtilities(
-        api_file=Path(__file__).parent / "examples" / "gdrive_credentials.json",
+        api_file=Path(_credential),
         template="gdrive-all-in-folder",
         folder_id=mime_application_folder,
         gslide_mode="single",
@@ -461,7 +441,7 @@ def test_load_with_gslide_mode_slide(mocker: MockerFixture) -> None:
         mocker, [{"nextPageToken": None, "files": [_application_vnd_slide]}]
     )
     utilities = GoogleDriveUtilities(
-        api_file=Path(__file__).parent / "examples" / "gdrive_credentials.json",
+        api_file=Path(_credential),
         template="gdrive-all-in-folder",
         folder_id=mime_application_folder,
         gslide_mode="slide",
@@ -478,7 +458,7 @@ def test_load_with_gslide_mode_elements(mocker: MockerFixture) -> None:
         mocker, [{"nextPageToken": None, "files": [_application_vnd_slide]}]
     )
     utilities = GoogleDriveUtilities(
-        api_file=Path(__file__).parent / "examples" / "gdrive_credentials.json",
+        api_file=Path(_credential),
         template="gdrive-all-in-folder",
         folder_id=mime_application_folder,
         gslide_mode="elements",
@@ -495,7 +475,7 @@ def test_load_with_gsheet_mode_elements(mocker: MockerFixture) -> None:
         mocker, [{"nextPageToken": None, "files": [_application_vnd_sheet]}]
     )
     utilities = GoogleDriveUtilities(
-        api_file=Path(__file__).parent / "examples" / "gdrive_credentials.json",
+        api_file=Path(_credential),
         template="gdrive-all-in-folder",
         folder_id=mime_application_folder,
         gsheet_mode="elements",
@@ -512,7 +492,7 @@ def test_load_with_gsheet_mode_single(mocker: MockerFixture) -> None:
         mocker, [{"nextPageToken": None, "files": [_application_vnd_sheet]}]
     )
     utilities = GoogleDriveUtilities(
-        api_file=Path(__file__).parent / "examples" / "gdrive_credentials.json",
+        api_file=Path(_credential),
         template="gdrive-all-in-folder",
         folder_id=mime_application_folder,
         gsheet_mode="single",
@@ -526,7 +506,7 @@ def test_load_with_gsheet_mode_single(mocker: MockerFixture) -> None:
 @unittest.skipIf(not google_workspace_installed, "Google api not installed")
 def test_load_with_num_results_1(google_workspace: MagicMock) -> None:
     utilities = GoogleDriveUtilities(
-        api_file=Path(__file__).parent / "examples" / "gdrive_credentials.json",
+        api_file=Path(_credential),
         template="gdrive-all-in-folder",
         folder_id=mime_application_folder,
         num_results=1,
@@ -540,7 +520,7 @@ def test_load_with_num_results_1(google_workspace: MagicMock) -> None:
 @unittest.skipIf(not google_workspace_installed, "Google api not installed")
 def test_load_with_mode_snippets(google_workspace: MagicMock) -> None:
     utilities = GoogleDriveUtilities(
-        api_file=Path(__file__).parent / "examples" / "gdrive_credentials.json",
+        api_file=Path(_credential),
         template="gdrive-all-in-folder",
         folder_id=mime_application_folder,
         mode="snippets",
@@ -558,7 +538,7 @@ def test_load_with_mode_snippets(google_workspace: MagicMock) -> None:
 @unittest.skipIf(not google_workspace_installed, "Google api not installed")
 def test_load_with_mode_documents(google_workspace: MagicMock) -> None:
     utilities = GoogleDriveUtilities(
-        api_file=Path(__file__).parent / "examples" / "gdrive_credentials.json",
+        api_file=Path(_credential),
         template="gdrive-all-in-folder",
         folder_id=mime_application_folder,
         mode="documents",
@@ -573,7 +553,7 @@ def test_load_with_mode_documents(google_workspace: MagicMock) -> None:
 @unittest.skipIf(not google_workspace_installed, "Google api not installed")
 def test_link_field(google_workspace: MagicMock) -> None:
     utilities = GoogleDriveUtilities(
-        api_file=Path(__file__).parent / "examples" / "gdrive_credentials.json",
+        api_file=Path(_credential),
         template="gdrive-all-in-folder",
         folder_id=mime_application_folder,
         mode="documents",
@@ -588,7 +568,7 @@ def test_link_field(google_workspace: MagicMock) -> None:
     ) == "https://docs.google.com/document/d/1/edit?usp=drivesdk"
 
     utilities = GoogleDriveUtilities(
-        api_file=Path(__file__).parent / "examples" / "gdrive_credentials.json",
+        api_file=Path(_credential),
         template="gdrive-all-in-folder",
         folder_id=mime_application_folder,
         mode="documents",
@@ -624,7 +604,7 @@ def test_load_document_with_no_link_in_file(mocker: MockerFixture) -> None:
         ],
     )
     utilities = GoogleDriveUtilities(
-        api_file=Path(__file__).parent / "examples" / "gdrive_credentials.json",
+        api_file=Path(_credential),
         template="gdrive-all-in-folder",
         folder_id=mime_application_folder,
         mode="documents",
@@ -640,7 +620,7 @@ def test_load_document_with_no_link_in_file(mocker: MockerFixture) -> None:
         == "https://docs.google.com/document/d/1/edit?usp=drivesdk"
     )
     utilities = GoogleDriveUtilities(
-        api_file=Path(__file__).parent / "examples" / "gdrive_credentials.json",
+        api_file=Path(_credential),
         template="gdrive-all-in-folder",
         folder_id=mime_application_folder,
         mode="documents",
@@ -659,7 +639,7 @@ def test_load_document_with_no_link_in_file(mocker: MockerFixture) -> None:
 @unittest.skipIf(not google_workspace_installed, "Google api not installed")
 def test_load_with_template_query(google_workspace: MagicMock) -> None:
     utilities = GoogleDriveUtilities(
-        api_file=Path(__file__).parent / "examples" / "gdrive_credentials.json",
+        api_file=Path(_credential),
         template="gdrive-query",
         query="hello",
         gslide_mode="single",
@@ -676,7 +656,7 @@ def test_load_with_template_query_with_mime_type_and_folders(
     google_workspace: MagicMock,
 ) -> None:
     utilities = GoogleDriveUtilities(
-        api_file=Path(__file__).parent / "examples" / "gdrive_credentials.json",
+        api_file=Path(_credential),
         query="toto",
         folder_id=mime_application_folder,
         mime_type="application/vnd.google-apps.document",
@@ -693,7 +673,7 @@ def test_load_with_template_query_with_mime_type_and_folders(
 @unittest.skipIf(not google_workspace_installed, "Google api not installed")
 def test_load_with_custom_template(google_workspace: MagicMock) -> None:
     utilities = GoogleDriveUtilities(
-        api_file=Path(__file__).parent / "examples" / "gdrive_credentials.json",
+        api_file=Path(_credential),
         folder_id=mime_application_folder,
         template=PromptTemplate(input_variables=["toto"], template="{toto}"),
         toto="toto",
@@ -711,7 +691,7 @@ def test_load_with_default_conv_mapping(mocker: MockerFixture) -> None:
     patch_google_workspace(mocker, [{"nextPageToken": None, "files": [_text_text]}])
 
     utilities = GoogleDriveUtilities(
-        api_file=Path(__file__).parent / "examples" / "gdrive_credentials.json",
+        api_file=Path(_credential),
         folder_id=mime_application_folder,
         template="gdrive-all-in-folder",
     )
@@ -737,7 +717,7 @@ def test_load_with_conv_mapping(mocker: MockerFixture) -> None:
         "text/plain": TextLoader,
     }
     utilities = GoogleDriveUtilities(
-        api_file=Path(__file__).parent / "examples" / "gdrive_credentials.json",
+        api_file=Path(_credential),
         folder_id=mime_application_folder,
         conv_mapping=my_mime_types_mapping,
         template="gdrive-all-in-folder",
@@ -778,7 +758,7 @@ def test_load_with_recursive_shortcut_and_page_token(mocker: MockerFixture) -> N
         ],
     )
     utilities = GoogleDriveUtilities(
-        api_file=Path(__file__).parent / "examples" / "gdrive_credentials.json",
+        api_file=Path(_credential),
         folder_id=mime_application_folder,
         recursive=True,
         template="gdrive-all-in-folder",
@@ -803,7 +783,7 @@ def test_load_follow_shortcut_false(mocker: MockerFixture) -> None:
         ],
     )
     utilities = GoogleDriveUtilities(
-        api_file=Path(__file__).parent / "examples" / "gdrive_credentials.json",
+        api_file=Path(_credential),
         template="gdrive-all-in-folder",
         folder_id=mime_application_folder,
         follow_shortcut=False,
@@ -827,7 +807,7 @@ def test_load_follow_shortcut_true(mocker: MockerFixture) -> None:
         ],
     )
     utilities = GoogleDriveUtilities(
-        api_file=Path(__file__).parent / "examples" / "gdrive_credentials.json",
+        api_file=Path(_credential),
         template="gdrive-all-in-folder",
         folder_id=mime_application_folder,
         follow_shortcut=True,
@@ -841,7 +821,7 @@ def test_load_follow_shortcut_true(mocker: MockerFixture) -> None:
 @unittest.skipIf(not google_workspace_installed, "Google api not installed")
 def test_load_files_customs_google_api(google_workspace: MagicMock) -> None:
     utilities = GoogleDriveUtilities(
-        api_file=Path(__file__).parent / "examples" / "gdrive_credentials.json",
+        api_file=Path(_credential),
         folder_id=mime_application_folder,
         template="gdrive-all-in-folder",
         corpora="user",
@@ -877,7 +857,7 @@ def test_load_files_customs_google_api(google_workspace: MagicMock) -> None:
 @unittest.skipIf(not google_workspace_installed, "Google api not installed")
 def test_load_filter(google_workspace: MagicMock) -> None:
     utilities = GoogleDriveUtilities(
-        api_file=Path(__file__).parent / "examples" / "gdrive_credentials.json",
+        api_file=Path(_credential),
         folder_id=mime_application_folder,
         filter=lambda self, file: False,
         template="gdrive-all-in-folder",
@@ -890,7 +870,7 @@ def test_load_filter(google_workspace: MagicMock) -> None:
 @unittest.skipIf(not google_workspace_installed, "Google api not installed")
 def test_load_document_from_id(google_workspace: MagicMock) -> None:
     utilities = GoogleDriveUtilities(
-        api_file=Path(__file__).parent / "examples" / "gdrive_credentials.json",
+        api_file=Path(_credential),
         folder_id=mime_application_folder,
         template="gdrive-all-in-folder",
     )
@@ -901,7 +881,7 @@ def test_load_document_from_id(google_workspace: MagicMock) -> None:
 @unittest.skipIf(not google_workspace_installed, "Google api not installed")
 def test_load_document_from_bad_id(google_workspace: MagicMock) -> None:
     utilities = GoogleDriveUtilities(
-        api_file=Path(__file__).parent / "examples" / "gdrive_credentials.json",
+        api_file=Path(_credential),
         folder_id=mime_application_folder,
         template="gdrive-all-in-folder",
     )
@@ -912,7 +892,7 @@ def test_load_document_from_bad_id(google_workspace: MagicMock) -> None:
 @unittest.skipIf(not google_workspace_installed, "Google api not installed")
 def test_load_slides_from_id(google_workspace: MagicMock) -> None:
     utilities = GoogleDriveUtilities(
-        api_file=Path(__file__).parent / "examples" / "gdrive_credentials.json",
+        api_file=Path(_credential),
         folder_id=mime_application_folder,
         template="gdrive-all-in-folder",
     )
@@ -923,7 +903,7 @@ def test_load_slides_from_id(google_workspace: MagicMock) -> None:
 @unittest.skipIf(not google_workspace_installed, "Google api not installed")
 def test_load_slides_from_bad_id(google_workspace: MagicMock) -> None:
     utilities = GoogleDriveUtilities(
-        api_file=Path(__file__).parent / "examples" / "gdrive_credentials.json",
+        api_file=Path(_credential),
         folder_id=mime_application_folder,
         template="gdrive-all-in-folder",
     )
@@ -934,7 +914,7 @@ def test_load_slides_from_bad_id(google_workspace: MagicMock) -> None:
 @unittest.skipIf(not google_workspace_installed, "Google api not installed")
 def test_load_sheets_from_id(google_workspace: MagicMock) -> None:
     utilities = GoogleDriveUtilities(
-        api_file=Path(__file__).parent / "examples" / "gdrive_credentials.json",
+        api_file=Path(_credential),
         folder_id=mime_application_folder,
         template="gdrive-all-in-folder",
     )
@@ -945,7 +925,7 @@ def test_load_sheets_from_id(google_workspace: MagicMock) -> None:
 @unittest.skipIf(not google_workspace_installed, "Google api not installed")
 def test_load_sheets_from_bad_id(google_workspace: MagicMock) -> None:
     utilities = GoogleDriveUtilities(
-        api_file=Path(__file__).parent / "examples" / "gdrive_credentials.json",
+        api_file=Path(_credential),
         folder_id=mime_application_folder,
         template="gdrive-all-in-folder",
     )
@@ -956,7 +936,7 @@ def test_load_sheets_from_bad_id(google_workspace: MagicMock) -> None:
 @unittest.skipIf(not google_workspace_installed, "Google api not installed")
 def test_load_file_from_id(google_workspace: MagicMock) -> None:
     utilities = GoogleDriveUtilities(
-        api_file=Path(__file__).parent / "examples" / "gdrive_credentials.json",
+        api_file=Path(_credential),
         folder_id=mime_application_folder,
         template="gdrive-all-in-folder",
     )
@@ -967,7 +947,7 @@ def test_load_file_from_id(google_workspace: MagicMock) -> None:
 @unittest.skipIf(not google_workspace_installed, "Google api not installed")
 def test_load_file_from_bad_id(google_workspace: MagicMock) -> None:
     utilities = GoogleDriveUtilities(
-        api_file=Path(__file__).parent / "examples" / "gdrive_credentials.json",
+        api_file=Path(_credential),
         folder_id=mime_application_folder,
         template="gdrive-all-in-folder",
     )
@@ -988,10 +968,7 @@ def test_snippet_from_page_content() -> None:
 @unittest.skipIf(not google_workspace_installed, "Google api not installed")
 def test_default(google_workspace: MagicMock) -> None:
     wrapper = GoogleDriveAPIWrapper(
-        api_file=Path(__file__).parent.parent
-        / "utilities"
-        / "examples"
-        / "gdrive_credentials.json",
+        api_file=Path(_credential),
     )
     assert wrapper.gslide_mode == "single"
     assert wrapper.gsheet_mode == "single"
@@ -1000,10 +977,7 @@ def test_default(google_workspace: MagicMock) -> None:
 @unittest.skipIf(not google_workspace_installed, "Google api not installed")
 def test_query_snippets(google_workspace: MagicMock) -> None:
     wrapper = GoogleDriveAPIWrapper(
-        api_file=Path(__file__).parent.parent
-        / "utilities"
-        / "examples"
-        / "gdrive_credentials.json",
+        api_file=Path(_credential),
         mode="snippets",
     )
     result = wrapper.run("machine learning")
@@ -1017,10 +991,7 @@ def test_query_snippets(google_workspace: MagicMock) -> None:
 @unittest.skipIf(not google_workspace_installed, "Google api not installed")
 def test_query_snippets_markdown(google_workspace: MagicMock) -> None:
     wrapper = GoogleDriveAPIWrapper(
-        api_file=Path(__file__).parent.parent
-        / "utilities"
-        / "examples"
-        / "gdrive_credentials.json",
+        api_file=Path(_credential),
         mode="snippets-markdown",
     )
     result = wrapper.run("machine learning")
@@ -1034,10 +1005,7 @@ def test_query_snippets_markdown(google_workspace: MagicMock) -> None:
 @unittest.skipIf(not google_workspace_installed, "Google api not installed")
 def test_query_documents(google_workspace: MagicMock) -> None:
     wrapper = GoogleDriveAPIWrapper(
-        api_file=Path(__file__).parent.parent
-        / "utilities"
-        / "examples"
-        / "gdrive_credentials.json",
+        api_file=Path(_credential),
         mode="documents",
     )
     result = wrapper.run("machine learning")
@@ -1051,10 +1019,7 @@ def test_query_documents(google_workspace: MagicMock) -> None:
 @unittest.skipIf(not google_workspace_installed, "Google api not installed")
 def test_query_documents_markdown(google_workspace: MagicMock) -> None:
     wrapper = GoogleDriveAPIWrapper(
-        api_file=Path(__file__).parent.parent
-        / "utilities"
-        / "examples"
-        / "gdrive_credentials.json",
+        api_file=Path(_credential),
         mode="documents-markdown",
     )
     result = wrapper.run("machine learning")
@@ -1069,10 +1034,7 @@ def test_query_documents_markdown(google_workspace: MagicMock) -> None:
 def test_query_no_documents(mocker: MockerFixture) -> None:
     patch_google_workspace(mocker, [{"nextPageToken": None, "files": []}])
     wrapper = GoogleDriveAPIWrapper(
-        api_file=Path(__file__).parent.parent
-        / "utilities"
-        / "examples"
-        / "gdrive_credentials.json",
+        api_file=Path(_credential),
         mode="documents-markdown",
     )
     result = wrapper.run("machine learning")
@@ -1082,10 +1044,7 @@ def test_query_no_documents(mocker: MockerFixture) -> None:
 @unittest.skipIf(not google_workspace_installed, "Google api not installed")
 def test_no_query(google_workspace: MagicMock) -> None:
     wrapper = GoogleDriveAPIWrapper(
-        api_file=Path(__file__).parent.parent
-        / "utilities"
-        / "examples"
-        / "gdrive_credentials.json",
+        api_file=Path(_credential),
         mode="documents-markdown",
     )
     wrapper.run("")

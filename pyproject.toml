@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "langchain-googledrive"
-version = "0.0.285"
+version = "0.0.306"
 description = "This is a temporary project while I wait for my langchain [pull-request](https://github.com/hwchase17/langchain/pull/5135) to be validated."
 authors = ["Philippe PRADOS"]
 license = "MIT License"
@@ -10,7 +10,7 @@ packages = [{ include = "langchain_googledrive" }]
 
 [tool.poetry.dependencies]
 python = "^3.8.1"
-langchain = ">=0.0.281"
+langchain = ">=0.0.306"
 #async-timeout = {version = "^4.0.0", python = "<3.11"}
 google-api-python-client = "^2.97"
 google-auth-httplib2 = ">=0.1"
@@ -23,6 +23,7 @@ torch = { version = ">=1,<3", optional = true }
 
 pytesseract = { version = "^0.3.10", optional = true }
 unstructured = { version = "^0.10.12", extras = ["local-inference"], optional = true }
+pytest = "^7.4.2"
 
 [tool.poetry.extras]
 all = [
@@ -52,7 +53,7 @@ optional = true
 pytest = "^7.3.0"
 pytest-cov = "^4.0.0"
 pytest-dotenv = "^0.5.2"
-duckdb = "0.8.0"  # FIXME when duckdb must be compatible with pandas 2
+duckdb = "^0.9.0"
 pytest-watcher = "^0.2.6"
 freezegun = "^1.2.2"
 responses = "^0.22.0"
