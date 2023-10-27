@@ -15,6 +15,7 @@ from langchain.base_language import BaseLanguageModel
 from langchain.document_loaders.base import BaseLoader
 from langchain.pydantic_v1 import root_validator
 from langchain.schema import Document
+from langchain.text_splitter import RecursiveCharacterTextSplitter, TextSplitter
 
 from ..utilities.google_drive import (
     GoogleDriveUtilities,
@@ -117,10 +118,16 @@ class GoogleDriveLoader(BaseLoader, GoogleDriveUtilities):
             raise ValueError("only folder_id or document_ids must be set")
         if values.get("document_ids") or values.get("file_ids"):
             warnings.warn(
-                "document_ids and file_ids are deprecated. Use templates.",
+                "document_ids and file_ids are deprecated. "
+                'Use the template "gdrive-by-name-in-folder", a `folder_id`'
+                "and the filename in `query`.",
                 DeprecationWarning,
             )
-            logger.warning("document_ids and file_ids are deprecated. Use templates.")
+            logger.warning(
+                "document_ids and file_ids are deprecated. "
+                'Use the template "gdrive-by-name-in-folder", a `folder_id`'
+                "and the filename in `query`.",
+            )
             if "template" in values:
                 raise ValueError(
                     "folder_id or document_ids can only be given "
@@ -202,6 +209,24 @@ class GoogleDriveLoader(BaseLoader, GoogleDriveUtilities):
 
     def load(self) -> List[Document]:
         return list(self.lazy_load())
+
+    def load_and_split(
+        self, text_splitter: Optional[TextSplitter] = None
+    ) -> List[Document]:
+        """Load Documents and split into chunks. Chunks are returned as Documents.
+
+        Args:
+            text_splitter: TextSplitter instance to use for splitting documents.
+              Defaults to RecursiveCharacterTextSplitter.
+
+        Returns:
+            List of Documents.
+        """
+        if text_splitter is None:
+            _text_splitter: TextSplitter = RecursiveCharacterTextSplitter()
+        else:
+            _text_splitter = text_splitter
+        return _text_splitter.split_documents(self.lazy_load())
 
     def lazy_update_description_with_summary(
         self,
@@ -297,7 +322,7 @@ class GoogleDriveLoader(BaseLoader, GoogleDriveUtilities):
         )
 
     def __init__(self, **kwargs):  # type: ignore
-        from langchain import PromptTemplate as OriginalPromptTemplate
+        from langchain.prompts import PromptTemplate as OriginalPromptTemplate
 
         super().__init__(**kwargs)
         _file_types = self._file_type_to_mime_types()

@@ -766,19 +766,22 @@ class GoogleDriveUtilities(Serializable, BaseModel):
             token_path = self.gdrive_token_path
 
         # Implicit location of token.json
-        if not token_path:
-            token_path = Path("./token.json")
+        token = None
+        if "GOOGLE_ACCOUNT_TOKEN" not in os.environ:
+            if not token_path:
+                token_path = Path("./token.json")
+            if token_path and token_path.exists():
+                with io.open(token_path, "r", encoding="utf-8-sig") as json_file:
+                    token = json.load(json_file)
+        else:
+            token = json.loads(os.environ["GOOGLE_ACCOUNT_TOKEN"])
 
         if "installed" not in info:  # For user
             return service_account.Credentials.from_service_account_info(
                 info, scopes=scopes
             )
 
-        creds = (
-            Credentials.from_authorized_user_info(info, scopes)
-            if token_path.exists()
-            else None
-        )
+        creds = Credentials.from_authorized_user_info(token, scopes) if token else None
 
         if not creds or not creds.valid:
             if creds and (creds.expired or creds.refresh_token):
@@ -786,8 +789,12 @@ class GoogleDriveUtilities(Serializable, BaseModel):
             else:
                 flow = InstalledAppFlow.from_client_config(info, scopes)
                 creds = flow.run_local_server(port=0)
-            with open(token_path, "w") as token:
-                token.write(creds.to_json())
+            if "GOOGLE_ACCOUNT_TOKEN" not in os.environ:
+                if token_path:
+                    with open(token_path, "w") as token:
+                        token.write(creds.to_json())
+                else:
+                    raise ValueError("Set the `gdrive_token_path`")
 
         return creds
 
@@ -1065,7 +1072,7 @@ class GoogleDriveUtilities(Serializable, BaseModel):
                     return iter([])
                 yield Document(
                     page_content=description,
-                    metadata={**self._extract_meta_data(target), **{"id": file["id"]}},
+                    metadata={**self._extract_meta_data(target), **{"id": target_id}},
                 )
         else:
             target_mime_type = mime_type
@@ -1162,6 +1169,7 @@ class GoogleDriveUtilities(Serializable, BaseModel):
         """
         meta = {
             "gdriveId": file["id"],
+            "id": file["id"],
             "mimeType": file["mimeType"],
             "name": file["name"],
             "title": file["name"],
@@ -1197,7 +1205,7 @@ class GoogleDriveUtilities(Serializable, BaseModel):
             Document
         """
         from googleapiclient.errors import HttpError
-        from langchain import PromptTemplate as OriginalPromptTemplate
+        from langchain.prompts import PromptTemplate as OriginalPromptTemplate
 
         if not query and "query" in self._kwargs:
             query = self._kwargs["query"]
@@ -1683,6 +1691,7 @@ class GoogleDriveUtilities(Serializable, BaseModel):
                     else:
                         source += f"#slide=id.{slide['objectId']}"
                     meta["source"] = source
+                    meta["id"] = f'{meta["gdriveId"]}#{slide["objectId"]}'
                     yield Document(
                         page_content="\n".join(self._extract_text(page_elements)),
                         metadata=meta,
@@ -1702,6 +1711,7 @@ class GoogleDriveUtilities(Serializable, BaseModel):
                                 m = metadata.copy()
                                 if "source" in m:
                                     m["source"] = m["source"] + f"&i={i}"
+                                m["id"] = f'{m["gdriveId"]}#{slide["objectId"]}&i={i}'
 
                                 yield Document(page_content=line, metadata=m)
         else:

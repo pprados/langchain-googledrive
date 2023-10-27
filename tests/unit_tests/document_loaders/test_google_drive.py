@@ -5,6 +5,7 @@ from unittest import mock
 from unittest.mock import MagicMock
 
 import pytest
+from langchain.text_splitter import RecursiveCharacterTextSplitter
 from pytest_mock import MockerFixture
 
 from langchain_googledrive.document_loaders.google_drive import GoogleDriveLoader
@@ -50,6 +51,20 @@ def test_load_returns_list_of_google_documents_single(
     assert loader.mode == "documents"  # Check default value
     assert loader.gsheet_mode == "single"  # Check default value
     assert loader.gslide_mode == "single"  # Check default value
+
+
+@unittest.skipIf(not google_workspace_installed, "Google api not installed")
+@mock.patch.dict(os.environ, {"GOOGLE_ACCOUNT_FILE": _credential}, clear=True)
+def test_load_and_split_returns_list_of_google_documents_single(
+    google_workspace: MagicMock,
+) -> None:
+    loader = GoogleDriveLoader(
+        api_file=Path(_credential),
+        folder_id="999",
+    )
+    loader.load_and_split(
+        text_splitter=RecursiveCharacterTextSplitter(chunk_size=100, chunk_overlap=0)
+    )
 
 
 @unittest.skipIf(not google_workspace_installed, "Google api not installed")
@@ -175,7 +190,8 @@ def test_deprecated_document_ids(google_workspace: MagicMock) -> None:
         docs = loader.load()
         assert len(docs) == 2
     assert [str(warn.message) for warn in w.list] == [
-        "document_ids and file_ids are deprecated. Use templates."
+        "document_ids and file_ids are deprecated. Use the template "
+        '"gdrive-by-name-in-folder", a `folder_id`and the filename in `query`.'
     ]
 
 
@@ -190,7 +206,8 @@ def test_deprecated_files_ids(google_workspace: MagicMock) -> None:
         docs = loader.load()
         assert len(docs) == 2
     assert [str(warn.message) for warn in w.list] == [
-        "document_ids and file_ids are deprecated. Use templates."
+        "document_ids and file_ids are deprecated. Use the template "
+        '"gdrive-by-name-in-folder", a `folder_id`and the filename in `query`.'
     ]
 
 
@@ -275,7 +292,8 @@ def test_deprecated_service_account_key(google_workspace: MagicMock) -> None:
         docs = loader.load()
         assert len(docs) == 1
     assert [str(warn.message) for warn in w.list] == [
-        "document_ids and file_ids are deprecated. Use templates.",
+        "document_ids and file_ids are deprecated. Use the template "
+        '"gdrive-by-name-in-folder", a `folder_id`and the filename in `query`.',
         "service_account_key was deprecated. Use GOOGLE_ACCOUNT_FILE env. variable.",
     ]
 

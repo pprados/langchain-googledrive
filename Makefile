@@ -49,6 +49,7 @@ spell_fix:
 ######################
 
 clean: docs_clean api_docs_clean
+	rm -Rf dist/*
 
 
 docs_build:
