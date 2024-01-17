@@ -1132,7 +1132,7 @@ class GoogleDriveUtilities(Serializable, BaseModel):
                     else:
                         logger.debug(f"Filter reject the document {file['name']}")
                         return
-                except HttpError as e:
+                except Exception as e:
                     logger.warning(
                         f"Impossible to read or convert the content "
                         f"of '{file['name']}'' ({file['id']}) [{e}]"
@@ -1246,7 +1246,7 @@ class GoogleDriveUtilities(Serializable, BaseModel):
         list_kwargs = {
             k: v for k, v in list_kwargs.items() if k in _acceptable_params_of_list
         }
-
+        
         folder_id = variables.get("folder_id")
         documents_id: Set[str] = set()
         recursive_folders = []
@@ -1457,10 +1457,12 @@ class GoogleDriveUtilities(Serializable, BaseModel):
                     if "bullet" in node["paragraph"]:
                         prefix += "- "
                     result.append(prefix)
-                if "table" in node:
+                if "table" in node and "columns" in node["table"]:
                     col_size = [0 for _ in range(node["table"]["columns"])]
                     rows: List[List[Any]] = [[] for _ in range(node["table"]["rows"])]
                     for row_idx, row in enumerate(node["table"]["tableRows"]):
+                        if not row.get('tableCells'):
+                            continue
                         for col_idx, cell in enumerate(row["tableCells"]):
                             body = "".join(
                                 visitor([], cell, parent + "/table/tableCells/[]")
