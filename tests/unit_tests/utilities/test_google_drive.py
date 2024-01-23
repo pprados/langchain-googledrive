@@ -8,9 +8,9 @@ from unittest import mock
 from unittest.mock import MagicMock
 
 import pytest
-from langchain import PromptTemplate
-from langchain.pydantic_v1 import BaseModel
-from langchain.schema import Document
+from langchain_core.documents import Document
+from langchain_core.prompts import PromptTemplate
+from langchain_core.pydantic_v1 import BaseModel
 from pytest_mock import MockerFixture
 
 # from langchain_googledrive.utilities import GoogleDriveAPIWrapper
@@ -22,7 +22,7 @@ from langchain_googledrive.utilities.google_drive import (
 
 try:
     from google.auth.transport.requests import Request  # noqa: F401
-    from google.oauth2 import service_account  # noqa: F401
+    from google.oauth2 import service_account  # type: ignore[attr-defined]
     from google.oauth2.credentials import Credentials  # noqa: F401
     from google_auth_oauthlib.flow import InstalledAppFlow  # noqa: F401 , type: ignore
     from googleapiclient.errors import HttpError  # noqa: F401 , type: ignore
@@ -30,6 +30,14 @@ try:
     google_workspace_installed = True
 except ImportError:
     google_workspace_installed = False
+
+try:
+    import langchain
+
+    assert langchain
+    langchain_installed = True
+except ImportError:
+    langchain_installed = False
 
 _credential = str(Path(__file__).parent / "examples" / "gdrive_credentials.json")
 _services = str(Path(__file__).parent / "examples" / "gdrive_service.json")
@@ -220,7 +228,7 @@ not_gdrive_docs = list(
 
 def patch_google_workspace(
     mocker: MockerFixture,
-    files_result: List[Dict] = [{"nextPageToken": None, "files": gdrive_docs}],
+    files_result: List[Dict] = [{"nextPageToken": None, "files": gdrive_docs}],  # noqa
 ) -> MagicMock:
     """Patch google API with a specific list of files"""
     if not google_workspace_installed:
@@ -702,7 +710,7 @@ def test_load_with_default_conv_mapping(mocker: MockerFixture) -> None:
 
 
 try:
-    from langchain.document_loaders import TextLoader
+    from langchain_community.document_loaders import TextLoader
 
     text_loader_installed = True
 except ImportError:
@@ -968,7 +976,7 @@ def test_snippet_from_page_content() -> None:
 @unittest.skipIf(not google_workspace_installed, "Google api not installed")
 def test_default(google_workspace: MagicMock) -> None:
     wrapper = GoogleDriveAPIWrapper(
-        api_file=Path(_credential),
+        gdrive_api_file=Path(_credential),
     )
     assert wrapper.gslide_mode == "single"
     assert wrapper.gsheet_mode == "single"
@@ -977,7 +985,7 @@ def test_default(google_workspace: MagicMock) -> None:
 @unittest.skipIf(not google_workspace_installed, "Google api not installed")
 def test_query_snippets(google_workspace: MagicMock) -> None:
     wrapper = GoogleDriveAPIWrapper(
-        api_file=Path(_credential),
+        gdrive_api_file=Path(_credential),
         mode="snippets",
     )
     result = wrapper.run("machine learning")
@@ -991,7 +999,7 @@ def test_query_snippets(google_workspace: MagicMock) -> None:
 @unittest.skipIf(not google_workspace_installed, "Google api not installed")
 def test_query_snippets_markdown(google_workspace: MagicMock) -> None:
     wrapper = GoogleDriveAPIWrapper(
-        api_file=Path(_credential),
+        gdrive_api_file=Path(_credential),
         mode="snippets-markdown",
     )
     result = wrapper.run("machine learning")
@@ -1005,7 +1013,7 @@ def test_query_snippets_markdown(google_workspace: MagicMock) -> None:
 @unittest.skipIf(not google_workspace_installed, "Google api not installed")
 def test_query_documents(google_workspace: MagicMock) -> None:
     wrapper = GoogleDriveAPIWrapper(
-        api_file=Path(_credential),
+        gdrive_api_file=Path(_credential),
         mode="documents",
     )
     result = wrapper.run("machine learning")
@@ -1019,7 +1027,7 @@ def test_query_documents(google_workspace: MagicMock) -> None:
 @unittest.skipIf(not google_workspace_installed, "Google api not installed")
 def test_query_documents_markdown(google_workspace: MagicMock) -> None:
     wrapper = GoogleDriveAPIWrapper(
-        api_file=Path(_credential),
+        gdrive_api_file=Path(_credential),
         mode="documents-markdown",
     )
     result = wrapper.run("machine learning")
@@ -1034,7 +1042,7 @@ def test_query_documents_markdown(google_workspace: MagicMock) -> None:
 def test_query_no_documents(mocker: MockerFixture) -> None:
     patch_google_workspace(mocker, [{"nextPageToken": None, "files": []}])
     wrapper = GoogleDriveAPIWrapper(
-        api_file=Path(_credential),
+        gdrive_api_file=Path(_credential),
         mode="documents-markdown",
     )
     result = wrapper.run("machine learning")
@@ -1044,7 +1052,7 @@ def test_query_no_documents(mocker: MockerFixture) -> None:
 @unittest.skipIf(not google_workspace_installed, "Google api not installed")
 def test_no_query(google_workspace: MagicMock) -> None:
     wrapper = GoogleDriveAPIWrapper(
-        api_file=Path(_credential),
+        gdrive_api_file=Path(_credential),
         mode="documents-markdown",
     )
     wrapper.run("")

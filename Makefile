@@ -73,6 +73,14 @@ api_docs_clean:
 api_docs_linkcheck:
 	poetry run linkchecker docs/api_reference/_build/html/index.html
 
+poetry.lock: pyproject.toml
+	@poetry lock
+	@touch poetry.lock
+	@git add poetry.lock
+	@poetry install --sync --with dev,lint,test,codespell
+
+## Refresh lock
+lock: poetry.lock
 ######################
 # HELP
 ######################
@@ -134,37 +142,49 @@ else
 
 endif
 
+LANGCHAIN_HOME=../langchain
+TARGET:=langchain
+SRC_PACKAGE=langchain_googledrive
+DST_PACKAGE=langchain
+SRC_MODULE:=langchain-googledrive
+DST_MODULE:=langchain
 
-SRC=../langchain/libs/langchain/langchain
-DST=langchain_googledrive
-SRC_TEST=../langchain/libs/langchain/tests/unit_tests
-DST_TEST=tests/unit_tests
-SRC_DOC=../langchain/docs/extras/integrations
-DST_DOC=docs/extras/integrations
+define _push_sync
+	@$(eval TARGET=$(TARGET))
+	@$(eval SRC_PACKAGE=$(SRC_PACKAGE))
+	@$(eval DST_PACKAGE=$(DST_PACKAGE))
+	@$(eval WORK_DIR=$(shell mktemp -d --suffix ".rsync"))
+	@mkdir -p "${WORK_DIR}/libs/${TARGET}"
+	@mkdir -p "${WORK_DIR}/docs/docs"
+	@echo Copy and patch $(SRC_PACKAGE) to $(DST_PACKAGE) in $(LANGCHAIN_HOME)
+	@( \
+		cd $(SRC_PACKAGE)/ ; \
+		rsync -a \
+		  --exclude ".*" \
+		  --exclude __pycache__ \
+		  --exclude __init__.py \
+		  . "${WORK_DIR}/libs/${TARGET}/$(DST_PACKAGE)" ; \
+	)
+	@( \
+		cd tests/ ; \
+		rsync -a \
+		  --exclude ".*" \
+		  --exclude __pycache__ \
+		  --exclude __init__.py \
+		  . "${WORK_DIR}/libs/${TARGET}/tests" ; \
+	)
+	@( \
+		cd docs/ ; \
+		rsync -a \
+		  --exclude ".*" \
+		  . "${WORK_DIR}/docs/docs" ; \
+	)
+	@find '${WORK_DIR}' -type f -a \
+		-exec sed -i "s/${SRC_PACKAGE}/${DST_PACKAGE}/g" {} ';' \
+		-exec sed -i "s/pip install -q '$(SRC_MODULE)'/pip install -q '$(DST_MODULE)'/g" {} ';'
+	@cp -R "${WORK_DIR}/libs" "${WORK_DIR}/docs" $(LANGCHAIN_HOME)/
+	@rm -Rf '${WORK_DIR}'
+endef
 
-.PHONY: sync
-sync:
-	cp $(SRC)/document_loaders/google_drive.py $(DST)/document_loaders/google_drive.py
-	cp $(SRC)/retrievers/google_drive.py       $(DST)/retrievers/google_drive.py
-	cp $(SRC)/tools/google_drive/tool.py       $(DST)/tools/google_drive/tool.py
-	cp $(SRC)/utilities/google_drive.py        $(DST)/utilities/google_drive.py
-
-	cp $(SRC_TEST)/document_loaders/test_google_drive.py 	$(DST_TEST)/document_loaders/
-	cp $(SRC_TEST)/retrievers/test_google_drive.py 			$(DST_TEST)/retrievers/
-	cp $(SRC_TEST)/utilities/test_google_drive.py 			$(DST_TEST)/utilities/
-	cp -r $(SRC_TEST)/utilities/examples/* 					$(DST_TEST)/utilities/examples/
-	cp $(SRC_TEST)/llms/fake* 								$(DST_TEST)/llms
-	cp $(SRC_TEST)/llms/__init__* 							$(DST_TEST)/llms
-	cp $(SRC_TEST)/callbacks/fake* 							$(DST_TEST)/callbacks
-	cp $(SRC_TEST)/callbacks/__init__* 						$(DST_TEST)/callbacks
-
-	cp $(SRC_DOC)/document_loaders/google_drive.ipynb 		$(DST_DOC)/document_loaders/google_drive.ipynb
-	cp $(SRC_DOC)/providers/google_drive.mdx 				$(DST_DOC)/providers/google_drive.mdx
-	cp $(SRC_DOC)/retrievers/google_drive.ipynb 			$(DST_DOC)/retrievers/google_drive.ipynb
-	cp $(SRC_DOC)/toolkits/google_drive.ipynb 				$(DST_DOC)/toolkits/google_drive.ipynb
-
-	find . -type f -name '*.py' | xargs sed -i 's/langchain.document_loaders.google_drive/langchain_googledrive.document_loaders.google_drive/g'
-	find . -type f -name '*.py' | xargs sed -i 's/langchain.retrievers.google_drive/langchain_googledrive.retrievers.google_drive/g'
-	find . -type f -name '*.py' | xargs sed -i 's/from langchain.utilities import GoogleDriveAPIWrapper/from langchain_googledrive.utilities import GoogleDriveAPIWrapper/g'
-	find . -type f -name '*.py' | xargs sed -i 's/from langchain.utilities.google_drive/from langchain_googledrive.utilities.google_drive/g'
-
+push-sync:
+	$(call _push_sync)
