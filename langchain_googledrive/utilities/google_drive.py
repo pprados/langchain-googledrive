@@ -28,8 +28,9 @@ from typing import (
 )
 from uuid import UUID, uuid4
 
-from langchain.load.serializable import Serializable
-from langchain.pydantic_v1 import (
+from langchain_core.documents import BaseDocumentTransformer, Document
+from langchain_core.load.serializable import Serializable
+from langchain_core.pydantic_v1 import (
     BaseModel,
     Extra,
     Field,
@@ -37,8 +38,6 @@ from langchain.pydantic_v1 import (
     root_validator,
     validator,
 )
-from langchain.schema import Document
-from langchain.text_splitter import TextSplitter
 
 
 # BaseLoader=Any # Fix circular import
@@ -59,7 +58,7 @@ class BaseLoader(Protocol):
         ...
 
     def load_and_split(
-        self, text_splitter: Optional[TextSplitter] = None
+        self, text_splitter: Optional[BaseDocumentTransformer] = None
     ) -> List[Document]:
         ...
 
@@ -85,14 +84,15 @@ class _FilePathLoader(Protocol):
 
 @runtime_checkable
 class _FilePathLoaderProtocol(Protocol):
-    def __init__(self, file_path: str, **kwargs: Dict[str, Any]):
+    def __init__(self, file_path: str, **kwargs: Dict[str, Any]):  # noqa
         ...
 
     def load(self) -> List[Document]:
         ...
 
 
-TYPE_CONV_MAPPING = Dict[str, Union[_FilePathLoader, Type[_FilePathLoaderProtocol]]]
+TYPE_LOAD = Union[_FilePathLoader, Type[_FilePathLoaderProtocol]]
+TYPE_CONV_MAPPING = Dict[str, TYPE_LOAD]
 
 _acceptable_params_of_list = {
     "corpora",
@@ -170,7 +170,7 @@ def default_conv_loader(
 ) -> TYPE_CONV_MAPPING:
     mime_types_mapping: TYPE_CONV_MAPPING = {}
     try:
-        from langchain.document_loaders import TextLoader
+        from langchain_community.document_loaders import TextLoader
 
         mime_types_mapping.update(
             {
@@ -183,7 +183,7 @@ def default_conv_loader(
         logger.info("Ignore TextLoader for GDrive")
 
     try:
-        from langchain.document_loaders import CSVLoader
+        from langchain_community.document_loaders import CSVLoader
 
         mime_types_mapping.update(
             {
@@ -195,15 +195,18 @@ def default_conv_loader(
         logger.info("Ignore CSVLoader for GDrive")
 
     try:
-        from langchain.document_loaders import NotebookLoader
+        from langchain_community.document_loaders import NotebookLoader
 
         mime_types_mapping.update(
             {
-                "application/vnd.google.colaboratory": partial(
-                    lambda file_path: NotebookLoader(
-                        path=file_path, include_outputs=False, remove_newline=True
-                    )
-                ),  # Notebooks
+                "application/vnd.google.colaboratory": cast(
+                    TYPE_LOAD,
+                    partial(  # type: ignore[arg-type]
+                        lambda file_path: NotebookLoader(
+                            path=file_path, include_outputs=False, remove_newline=True
+                        )
+                    ),
+                ),
             }
         )
     except ImportError:
@@ -211,7 +214,7 @@ def default_conv_loader(
 
     try:
         import pypandoc  # type: ignore
-        from langchain.document_loaders import UnstructuredRTFLoader
+        from langchain_community.document_loaders import UnstructuredRTFLoader
 
         # pypandoc.ensure_pandoc_installed()
 
@@ -224,7 +227,7 @@ def default_conv_loader(
         logger.info("Ignore RTF for GDrive (use `pip install pypandoc_binary`)")
     try:
         import unstructured  # noqa: F401 , type: ignore
-        from langchain.document_loaders import (
+        from langchain_community.document_loaders import (
             UnstructuredEPubLoader,
             UnstructuredFileLoader,
             UnstructuredHTMLLoader,
@@ -243,14 +246,17 @@ def default_conv_loader(
 
             mime_types_mapping.update(
                 {
-                    "image/png": partial(
-                        UnstructuredImageLoader, ocr_languages=ocr_languages
+                    "image/png": cast(
+                        TYPE_LOAD,
+                        partial(UnstructuredImageLoader, ocr_languages=ocr_languages),
                     ),
-                    "image/jpeg": partial(
-                        UnstructuredImageLoader, ocr_languages=ocr_languages
+                    "image/jpeg": cast(
+                        TYPE_LOAD,
+                        partial(UnstructuredImageLoader, ocr_languages=ocr_languages),
                     ),
-                    "application/json": partial(
-                        UnstructuredFileLoader, ocr_languages=ocr_languages
+                    "application/json": cast(
+                        TYPE_LOAD,
+                        partial(UnstructuredFileLoader, ocr_languages=ocr_languages),
                     ),
                 }
             )
@@ -277,8 +283,9 @@ def default_conv_loader(
 
             mime_types_mapping.update(
                 {
-                    "application/pdf": partial(
-                        UnstructuredPDFLoader, strategy=strategy, mode=mode
+                    "application/pdf": cast(
+                        TYPE_LOAD,
+                        partial(UnstructuredPDFLoader, strategy=strategy, mode=mode),
                     ),
                 }
             )
@@ -293,12 +300,12 @@ def default_conv_loader(
                 "text/html": UnstructuredHTMLLoader,
                 "text/markdown": UnstructuredMarkdownLoader,
                 "application/vnd.openxmlformats-officedocument."
-                "presentationml.presentation": partial(
-                    UnstructuredPowerPointLoader, mode=mode
+                "presentationml.presentation": cast(
+                    TYPE_LOAD, partial(UnstructuredPowerPointLoader, mode=mode)
                 ),  # PPTX
                 "application/vnd.openxmlformats-officedocument."
-                "wordprocessingml.document": partial(
-                    UnstructuredWordDocumentLoader, mode=mode
+                "wordprocessingml.document": cast(
+                    TYPE_LOAD, partial(UnstructuredWordDocumentLoader, mode=mode)
                 ),  # DOCX
                 # "application/vnd.openxmlformats-officedocument.
                 # spreadsheetml.sheet": # XLSX
@@ -315,7 +322,7 @@ def default_conv_loader(
 
 
 def _init_templates() -> Dict[str, PromptTemplate]:
-    from langchain.prompts.prompt import PromptTemplate as MyPromptTemplate
+    from langchain_core.prompts.prompt import PromptTemplate as MyPromptTemplate
 
     return {
         "gdrive-all-in-folder": MyPromptTemplate(
@@ -426,8 +433,8 @@ class GoogleDriveUtilities(Serializable, BaseModel):
     - "gdrive-all-in-folder":                   Return all compatible files from a
                                                  `folder_id`
     - "gdrive-query":                           Search `query` in all drives
-    - "gdrive-by-name":                         Search file with name `query`)
-    - "gdrive-by-name-in-folder":               Search file with name `query`)
+    - "gdrive-by-name":                         Search file with name `query`
+    - "gdrive-by-name-in-folder":               Search file with name `query`
                                                  in `folder_id`
     - "gdrive-query-in-folder":                 Search `query` in `folder_id`
                                                  (and sub-folders in `recursive=true`)
@@ -475,7 +482,7 @@ class GoogleDriveUtilities(Serializable, BaseModel):
     credentials_path: Optional[Path] = None
     """DEPRECATED Path to the credentials file."""
 
-    gdrive_api_file: Optional[FilePath]
+    gdrive_api_file: Optional[FilePath] = None
     """
     The file to use to connect to the google api or use 
     `os.environ["GOOGLE_ACCOUNT_FILE"]`. 
@@ -738,7 +745,7 @@ class GoogleDriveUtilities(Serializable, BaseModel):
         """
         try:
             from google.auth.transport.requests import Request
-            from google.oauth2 import service_account
+            from google.oauth2 import service_account  # type: ignore
             from google.oauth2.credentials import Credentials  # type: ignore
             from google_auth_oauthlib.flow import InstalledAppFlow  # type: ignore
         except ImportError:
@@ -896,7 +903,7 @@ class GoogleDriveUtilities(Serializable, BaseModel):
         self._folder_name_cache = _LRUCache()  # Cache with names of folders
         self._not_supported = set()  # Remember not supported mime type
 
-    def get_folder_name(self, file_id: str, **kwargs: Any) -> str:
+    def get_folder_name(self, file_id: str, **kwargs: Any) -> str:  # noqa
         """Return folder name from file_id. Cache the result."""
         from googleapiclient.errors import HttpError  # type: ignore
 
@@ -969,7 +976,7 @@ class GoogleDriveUtilities(Serializable, BaseModel):
                         for i, document in enumerate(loader.load()):
                             metadata = self._extract_meta_data(file)
                             if "source" in metadata:
-                                metadata["source"] = metadata["source"] + f"#_{i}"
+                                metadata["source"] += f"#_{i}"
                             document.metadata = metadata
                             yield document
                         return
@@ -985,7 +992,7 @@ class GoogleDriveUtilities(Serializable, BaseModel):
                             for i, document in enumerate(documents):
                                 metadata = self._extract_meta_data(file)
                                 if "source" in metadata:
-                                    metadata["source"] = metadata["source"] + f"#_{i}"
+                                    metadata["source"] += f"#_{i}"
                                 document.metadata = metadata
                                 yield document
                             return
@@ -1165,7 +1172,7 @@ class GoogleDriveUtilities(Serializable, BaseModel):
         Extract metadata from file
 
         :param file: The file
-        :return: Dict the meta data
+        :return: Dict the metadata
         """
         meta = {
             "gdriveId": file["id"],
@@ -1199,13 +1206,13 @@ class GoogleDriveUtilities(Serializable, BaseModel):
 
         Args:
             query: Query string or None.
-            kwargs: Additional parameters for templates of google list() api.
+            kwargs: Additional parameters for templates of Google list() api.
 
         Yield:
             Document
         """
         from googleapiclient.errors import HttpError
-        from langchain.prompts import PromptTemplate as OriginalPromptTemplate
+        from langchain_core.prompts import PromptTemplate as OriginalPromptTemplate
 
         if not query and "query" in self._kwargs:
             query = self._kwargs["query"]
@@ -1246,7 +1253,7 @@ class GoogleDriveUtilities(Serializable, BaseModel):
         list_kwargs = {
             k: v for k, v in list_kwargs.items() if k in _acceptable_params_of_list
         }
-        
+
         folder_id = variables.get("folder_id")
         documents_id: Set[str] = set()
         recursive_folders = []
@@ -1288,6 +1295,7 @@ class GoogleDriveUtilities(Serializable, BaseModel):
                             logger.info(
                                 f"Yield '{document.metadata['name']}'-{i} with "
                                 f'"{GoogleDriveUtilities._snippet_from_page_content(document.page_content)}"'
+                                # noqa
                             )
                             yield document
                             if 0 < num_results == nb_yield:
@@ -1461,7 +1469,7 @@ class GoogleDriveUtilities(Serializable, BaseModel):
                     col_size = [0 for _ in range(node["table"]["columns"])]
                     rows: List[List[Any]] = [[] for _ in range(node["table"]["rows"])]
                     for row_idx, row in enumerate(node["table"]["tableRows"]):
-                        if not row.get('tableCells'):
+                        if not row.get("tableCells"):
                             continue
                         for col_idx, cell in enumerate(row["tableCells"]):
                             body = "".join(
@@ -1538,7 +1546,7 @@ class GoogleDriveUtilities(Serializable, BaseModel):
         purge_result = []
         previous_empty = False
         for line in result:
-            line = re.sub("\x0b\s*", "\n", line).strip()
+            line = re.sub(r"\x0b\s*", "\n", line).strip()
             if not line:
                 if previous_empty:
                     continue
@@ -1705,17 +1713,16 @@ class GoogleDriveUtilities(Serializable, BaseModel):
                     metadata["source"] = (
                         metadata["source"] + "#slide=file_id." + slide["objectId"]
                     )
-                for slide in gslide["slides"]:
-                    if "pageElements" in slide:
-                        page_elements = self._sort_page_elements(slide["pageElements"])
-                        for i, line in enumerate(self._extract_text(page_elements)):
-                            if line.strip():
-                                m = metadata.copy()
-                                if "source" in m:
-                                    m["source"] = m["source"] + f"&i={i}"
-                                m["id"] = f'{m["gdriveId"]}#{slide["objectId"]}&i={i}'
+                if "pageElements" in slide:
+                    page_elements = self._sort_page_elements(slide["pageElements"])
+                    for i, line in enumerate(self._extract_text(page_elements)):
+                        if line.strip():
+                            m = metadata.copy()
+                            if "source" in m:
+                                m["source"] = m["source"] + f"&i={i}"
+                            m["id"] = f'{m["gdriveId"]}#{slide["objectId"]}&i={i}'
 
-                                yield Document(page_content=line, metadata=m)
+                            yield Document(page_content=line, metadata=m)
         else:
             raise ValueError(f"Invalid gslide_mode '{self.gslide_mode}'")
 
@@ -1904,6 +1911,6 @@ class GoogleDriveAPIWrapper(GoogleDriveUtilities):
 
         return metadata_results
 
-    def get_format_instructions(self) -> str:
+    def get_format_instructions(self) -> str:  # noqa
         """Return format instruction for LLM"""
         return FORMAT_INSTRUCTION

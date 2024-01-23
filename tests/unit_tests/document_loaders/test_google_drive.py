@@ -5,7 +5,6 @@ from unittest import mock
 from unittest.mock import MagicMock
 
 import pytest
-from langchain.text_splitter import RecursiveCharacterTextSplitter
 from pytest_mock import MockerFixture
 
 from langchain_googledrive.document_loaders.google_drive import GoogleDriveLoader
@@ -14,6 +13,7 @@ from tests.unit_tests.llms.fake_llm import FakeLLM
 from ..utilities.test_google_drive import (
     gdrive_docs,
     google_workspace_installed,
+    langchain_installed,
     patch_google_workspace,
 )
 
@@ -54,10 +54,13 @@ def test_load_returns_list_of_google_documents_single(
 
 
 @unittest.skipIf(not google_workspace_installed, "Google api not installed")
+@unittest.skipIf(not langchain_installed, "Langchain api not installed")
 @mock.patch.dict(os.environ, {"GOOGLE_ACCOUNT_FILE": _credential}, clear=True)
 def test_load_and_split_returns_list_of_google_documents_single(
     google_workspace: MagicMock,
 ) -> None:
+    from langchain.text_splitter import RecursiveCharacterTextSplitter  # noqa
+
     loader = GoogleDriveLoader(
         api_file=Path(_credential),
         folder_id="999",
@@ -91,6 +94,7 @@ def test_query(google_workspace: MagicMock) -> None:
 
 
 @unittest.skipIf(not google_workspace_installed, "Google api not installed")
+@unittest.skipIf(not langchain_installed, "Langchain api not installed")
 @mock.patch.dict(os.environ, {"GOOGLE_ACCOUNT_FILE": _credential}, clear=True)
 def test_update_description_with_summary(google_workspace: MagicMock) -> None:
     loader = GoogleDriveLoader(
@@ -214,7 +218,7 @@ def test_deprecated_files_ids(google_workspace: MagicMock) -> None:
 @unittest.skipIf(not google_workspace_installed, "Google api not installed")
 @mock.patch.dict(os.environ, {"GOOGLE_ACCOUNT_FILE": _credential}, clear=True)
 def test_deprecated_file_loader_cls(google_workspace: MagicMock) -> None:
-    from langchain.document_loaders import UnstructuredFileIOLoader
+    from langchain_community.document_loaders import UnstructuredFileIOLoader
 
     with pytest.deprecated_call() as w:
         folder_id = "root"
@@ -317,7 +321,7 @@ def test_old_ipynb(google_workspace: MagicMock) -> None:
     loader.load()
 
     # Step 3
-    from langchain.document_loaders import UnstructuredFileIOLoader
+    from langchain_community.document_loaders import UnstructuredFileIOLoader
 
     file_id = "1"
     loader = GoogleDriveLoader(

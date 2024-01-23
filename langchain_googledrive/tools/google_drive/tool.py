@@ -1,11 +1,11 @@
 import logging
 from typing import Optional
 
-from langchain.callbacks.manager import (
+from langchain_core.callbacks.manager import (
     AsyncCallbackManagerForToolRun,
     CallbackManagerForToolRun,
 )
-from langchain.tools import BaseTool
+from langchain_core.tools import BaseTool
 
 from ...utilities.google_drive import FORMAT_INSTRUCTION, GoogleDriveAPIWrapper
 

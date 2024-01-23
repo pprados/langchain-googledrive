@@ -2,6 +2,7 @@ import itertools
 import logging
 import warnings
 from typing import (
+    TYPE_CHECKING,
     Any,
     Dict,
     Iterator,
@@ -11,16 +12,20 @@ from typing import (
     Sequence,
 )
 
-from langchain.base_language import BaseLanguageModel
-from langchain.document_loaders.base import BaseLoader
-from langchain.pydantic_v1 import root_validator
-from langchain.schema import Document
-from langchain.text_splitter import RecursiveCharacterTextSplitter, TextSplitter
+from langchain_community.document_loaders.base import BaseLoader
+from langchain_core.documents import Document
+from langchain_core.language_models import BaseLanguageModel
+from langchain_core.pydantic_v1 import root_validator
 
 from ..utilities.google_drive import (
     GoogleDriveUtilities,
     get_template,
 )
+
+if TYPE_CHECKING:
+    from langchain.text_splitter import TextSplitter
+else:
+    TextSplitter = Any
 
 
 # To manage a circular import, use an alias of PromptTemplate
@@ -217,16 +222,13 @@ class GoogleDriveLoader(BaseLoader, GoogleDriveUtilities):
 
         Args:
             text_splitter: TextSplitter instance to use for splitting documents.
-              Defaults to RecursiveCharacterTextSplitter.
 
         Returns:
             List of Documents.
         """
-        if text_splitter is None:
-            _text_splitter: TextSplitter = RecursiveCharacterTextSplitter()
-        else:
-            _text_splitter = text_splitter
-        return _text_splitter.split_documents(self.lazy_load())
+        if not text_splitter:
+            raise ValueError("Set transformer")
+        return text_splitter.split_documents(documents=self.lazy_load())
 
     def lazy_update_description_with_summary(
         self,
@@ -251,8 +253,11 @@ class GoogleDriveLoader(BaseLoader, GoogleDriveUtilities):
             kwargs: Others parameters for the template (verbose, prompt, etc).
         """
         from googleapiclient.errors import HttpError  # type: ignore
-        from langchain.chains.summarize import load_summarize_chain
 
+        try:
+            from langchain.chains.summarize import load_summarize_chain
+        except ImportError:
+            raise ValueError("pip install langchain for this method")
         if "https://www.googleapis.com/auth/drive" not in self._creds.scopes:
             raise ValueError(
                 f"Remove the file 'token.json' and "
@@ -322,7 +327,7 @@ class GoogleDriveLoader(BaseLoader, GoogleDriveUtilities):
         )
 
     def __init__(self, **kwargs):  # type: ignore
-        from langchain.prompts import PromptTemplate as OriginalPromptTemplate
+        from langchain_core.prompts import PromptTemplate as OriginalPromptTemplate
 
         super().__init__(**kwargs)
         _file_types = self._file_type_to_mime_types()
