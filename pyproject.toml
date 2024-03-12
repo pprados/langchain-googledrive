@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "langchain-googledrive"
-version = "0.1.14"
+version = "0.1.30"
 description = "This is a temporary project while I wait for my langchain [pull-request](https://github.com/hwchase17/langchain/pull/5135) to be validated."
 authors = ["Philippe PRADOS"]
 license = "Apache 2.0"
