@@ -929,6 +929,19 @@ def test_load_sheets_from_id(google_workspace: MagicMock) -> None:
     docs = utilities.load_sheets_from_id(file_id="3")
     assert isinstance(docs, list)
 
+@unittest.skipIf(not google_workspace_installed, "Google api not installed")
+def test_load_sheets_from_id(google_workspace: MagicMock) -> None:
+    utilities = GoogleDriveUtilities(
+        api_file=Path(_credential),
+        folder_id=mime_application_folder,
+        template="gdrive-all-in-folder",
+        gsheet_mode="elements",
+        gsheet_metadata_columns=["a"]
+    )
+    docs = utilities.load_sheets_from_id(file_id="3")
+    assert isinstance(docs, list)
+    assert docs[0].metadata["a"] == 1
+
 
 @unittest.skipIf(not google_workspace_installed, "Google api not installed")
 def test_load_sheets_from_bad_id(google_workspace: MagicMock) -> None:

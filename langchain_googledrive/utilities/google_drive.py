@@ -1,3 +1,5 @@
+from collections import OrderedDict
+
 import io
 import json
 import logging
@@ -7,8 +9,17 @@ import re
 import tempfile
 import traceback
 import warnings
-from collections import OrderedDict
 from functools import partial
+from langchain_core.documents import BaseDocumentTransformer, Document
+from langchain_core.load.serializable import Serializable
+from langchain_core.pydantic_v1 import (
+    BaseModel,
+    Extra,
+    Field,
+    FilePath,
+    root_validator,
+    validator,
+)
 from pathlib import Path
 from typing import (
     Any,
@@ -24,20 +35,9 @@ from typing import (
     Type,
     Union,
     cast,
-    runtime_checkable,
+    runtime_checkable, Sequence,
 )
 from uuid import UUID, uuid4
-
-from langchain_core.documents import BaseDocumentTransformer, Document
-from langchain_core.load.serializable import Serializable
-from langchain_core.pydantic_v1 import (
-    BaseModel,
-    Extra,
-    Field,
-    FilePath,
-    root_validator,
-    validator,
-)
 
 
 # BaseLoader=Any # Fix circular import
@@ -58,14 +58,14 @@ class BaseLoader(Protocol):
         ...
 
     def load_and_split(
-        self, text_splitter: Optional[BaseDocumentTransformer] = None
+            self, text_splitter: Optional[BaseDocumentTransformer] = None
     ) -> List[Document]:
         ...
 
     # Attention: This method will be upgraded into an abstractmethod once it's
     #            implemented in all the existing subclasses.
     def lazy_load(
-        self,
+            self,
     ) -> Iterator[Document]:
         ...
 
@@ -164,9 +164,9 @@ class _LRUCache:
 
 
 def default_conv_loader(
-    mode: Literal["single", "elements"] = "single",
-    strategy: Literal["strategy", "fast"] = "fast",
-    ocr_languages: str = "eng",
+        mode: Literal["single", "elements"] = "single",
+        strategy: Literal["strategy", "fast"] = "fast",
+        ocr_languages: str = "eng",
 ) -> TYPE_CONV_MAPPING:
     mime_types_mapping: TYPE_CONV_MAPPING = {}
     try:
@@ -340,14 +340,14 @@ def _init_templates() -> Dict[str, PromptTemplate]:
         "gdrive-by-name-in-folder": MyPromptTemplate(
             input_variables=["query", "folder_id"],
             template="name contains '{query}' "
-            "and '{folder_id}' in parents "
-            "and trashed=false",
+                     "and '{folder_id}' in parents "
+                     "and trashed=false",
         ),
         "gdrive-query-in-folder": MyPromptTemplate(
             input_variables=["query", "folder_id"],
             template="fullText contains '{query}' "
-            "and '{folder_id}' in parents "
-            "and trashed=false",
+                     "and '{folder_id}' in parents "
+                     "and trashed=false",
         ),
         "gdrive-mime-type": MyPromptTemplate(
             input_variables=["mime_type"],
@@ -356,20 +356,20 @@ def _init_templates() -> Dict[str, PromptTemplate]:
         "gdrive-mime-type-in-folder": MyPromptTemplate(
             input_variables=["mime_type", "folder_id"],
             template="mimeType = '{mime_type}' "
-            "and '{folder_id}' in parents "
-            "and trashed=false",
+                     "and '{folder_id}' in parents "
+                     "and trashed=false",
         ),
         "gdrive-query-with-mime-type": MyPromptTemplate(
             input_variables=["query", "mime_type"],
             template="(fullText contains '{query}' "
-            "and mimeType = '{mime_type}') "
-            "and trashed=false",
+                     "and mimeType = '{mime_type}') "
+                     "and trashed=false",
         ),
         "gdrive-query-with-mime-type-and-folder": MyPromptTemplate(
             input_variables=["query", "mime_type", "folder_id"],
             template="((fullText contains '{query}') and mimeType = '{mime_type}') "
-            "and '{folder_id}' in parents "
-            "and trashed=false",
+                     "and '{folder_id}' in parents "
+                     "and trashed=false",
         ),
     }
 
@@ -576,6 +576,9 @@ class GoogleDriveUtilities(Serializable, BaseModel):
     """Generate one document by line ("single"),
             or one document with markdown array and `<PAGE BREAK>` tags."""
 
+    gsheet_metadata_columns: Sequence[str] = []
+    """A sequence of column names to use as metadata. Optional."""
+
     scopes: List[str] = SCOPES
     """ The scope to use the Google API. The default is for Read-only. 
     See [here](https://developers.google.com/identity/protocols/oauth2/scopes) """
@@ -700,7 +703,7 @@ class GoogleDriveUtilities(Serializable, BaseModel):
 
     @root_validator
     def orderBy_is_compatible_with_recursive(
-        cls, values: Dict[str, Any]
+            cls, values: Dict[str, Any]
     ) -> Dict[str, Any]:
         if values["orderBy"] and values["recursive"]:
             raise ValueError("`orderBy` is incompatible with `recursive` parameter")
@@ -1198,7 +1201,7 @@ class GoogleDriveUtilities(Serializable, BaseModel):
         return meta
 
     def lazy_get_relevant_documents(
-        self, query: Optional[str] = None, **kwargs: Any
+            self, query: Optional[str] = None, **kwargs: Any
     ) -> Iterator[Document]:
         """
         A generator to yield one document at a time.
@@ -1235,9 +1238,9 @@ class GoogleDriveUtilities(Serializable, BaseModel):
             if k in cast(PromptTemplate, self._template).input_variables
         }
         query_str = (
-            " "
-            + "".join(cast(PromptTemplate, self._template).format(**variables))
-            + " "
+                " "
+                + "".join(cast(PromptTemplate, self._template).format(**variables))
+                + " "
         )
         list_kwargs = {
             **self._gdrive_kwargs,
@@ -1271,9 +1274,9 @@ class GoogleDriveUtilities(Serializable, BaseModel):
                     )
                     for file in files:
                         file_key = (
-                            file.get("webViewLink")
-                            or file.get("webContentLink")
-                            or file["id"]
+                                file.get("webViewLink")
+                                or file.get("webContentLink")
+                                or file["id"]
                         )
                         if file_key in file in documents_id:
                             logger.debug(f"Already yield the document {file['id']}")
@@ -1281,8 +1284,8 @@ class GoogleDriveUtilities(Serializable, BaseModel):
                         documents = self._get_document(file, current_mode)
                         for i, document in enumerate(documents):
                             document_key = (
-                                document.metadata.get("source")
-                                or document.metadata["gdriveId"]
+                                    document.metadata.get("source")
+                                    or document.metadata["gdriveId"]
                             )
                             if document_key in documents_id:
                                 # May by, with a link
@@ -1326,8 +1329,8 @@ class GoogleDriveUtilities(Serializable, BaseModel):
                     dir_template = OriginalPromptTemplate(
                         input_variables=["folder_id"],
                         template="(mimeType = 'application/vnd.google-apps.folder' "
-                        "or mimeType = 'application/vnd.google-apps.shortcut') "
-                        "and '{folder_id}' in parents and trashed=false",
+                                 "or mimeType = 'application/vnd.google-apps.shortcut') "
+                                 "and '{folder_id}' in parents and trashed=false",
                     )
                     subdir_query = "".join(dir_template.format(folder_id=folder_id))
                     while True:  # Manage pages
@@ -1340,7 +1343,7 @@ class GoogleDriveUtilities(Serializable, BaseModel):
                                 if num_results > 0
                                 else GoogleDriveUtilities._default_page_size,
                                 "fields": "nextPageToken, "
-                                "files(id,name, mimeType, shortcutDetails)",
+                                          "files(id,name, mimeType, shortcutDetails)",
                             },
                         }
                         # Purge list_kwargs
@@ -1372,8 +1375,8 @@ class GoogleDriveUtilities(Serializable, BaseModel):
                                         f"'{file['name']}' ({file['id']})"
                                     )
                                 if (
-                                    mime_type == "application/vnd.google-apps.shortcut"
-                                    and self.follow_shortcut
+                                        mime_type == "application/vnd.google-apps.shortcut"
+                                        and self.follow_shortcut
                                 ):
                                     # Manage only shortcut to folder
                                     if "shortcutDetails" in file:
@@ -1381,8 +1384,8 @@ class GoogleDriveUtilities(Serializable, BaseModel):
                                             "targetMimeType"
                                         ]
                                         if (
-                                            target_mimetype
-                                            == "application/vnd.google-apps.folder"
+                                                target_mimetype
+                                                == "application/vnd.google-apps.folder"
                                         ):
                                             recursive_folders.append(
                                                 file["shortcutDetails"]["targetId"]
@@ -1442,12 +1445,12 @@ class GoogleDriveUtilities(Serializable, BaseModel):
             self._slides.close()
 
     def _extract_text(
-        self,
-        node: Any,
-        *,
-        key: str = "content",
-        path: str = "/textRun",
-        markdown: bool = True,
+            self,
+            node: Any,
+            *,
+            key: str = "content",
+            path: str = "/textRun",
+            markdown: bool = True,
     ) -> List[str]:
         def visitor(result: List[str], node: Any, parent: str) -> List[str]:
             if isinstance(node, dict):
@@ -1493,7 +1496,8 @@ class GoogleDriveUtilities(Serializable, BaseModel):
                                         r"\[(.*)\](?:\(.*\))", r"\1", portion
                                     )
                                     split_cell[i] = portion + (
-                                        " " * (col_size[col_idx] - len(pure_portion))
+                                            " " * (
+                                                col_size[col_idx] - len(pure_portion))
                                     )
                             # rebuild the body
                             row[col_idx] = "".join(split_cell)
@@ -1514,8 +1518,9 @@ class GoogleDriveUtilities(Serializable, BaseModel):
                     if parent.endswith(path):
                         if node[key].strip():
                             if markdown and (
-                                ("style" in node and "link" in node["style"])
-                                or ("textStyle" in node and "link" in node["textStyle"])
+                                    ("style" in node and "link" in node["style"])
+                                    or ("textStyle" in node and "link" in node[
+                                "textStyle"])
                             ):
                                 style_node = (
                                     node["style"]
@@ -1559,7 +1564,6 @@ class GoogleDriveUtilities(Serializable, BaseModel):
 
     def _lazy_load_sheet_from_file(self, file: Dict) -> Iterator[Document]:
         """Load a sheet and all tabs from an ID."""
-
         if file["mimeType"] != "application/vnd.google-apps.spreadsheet":
             logger.warning(f"File with id '{file['id']}' is not a GSheet")
             return
@@ -1594,11 +1598,17 @@ class GoogleDriveUtilities(Serializable, BaseModel):
                         metadata = self._extract_meta_data(file)
                         if "source" in metadata:
                             metadata["source"] = (
-                                metadata["source"]
-                                + "#gid="
-                                + str(sheet["properties"]["sheetId"])
-                                + f"&{i}"
+                                    metadata["source"]
+                                    + "#gid="
+                                    + str(sheet["properties"]["sheetId"])
+                                    + f"&{i}"
                             )
+                        metadata["row"] = i
+                        for col_name in self.gsheet_metadata_columns:
+                            try:
+                                metadata[col_name] = row[headers.index(col_name)]
+                            except ValueError:
+                                pass  # Ignore
 
                         yield Document(page_content=raw_content, metadata=metadata)
                 elif self.gsheet_mode == "single":
@@ -1633,10 +1643,10 @@ class GoogleDriveUtilities(Serializable, BaseModel):
                     raise ValueError(f"Invalid mode '{self.gslide_mode}'")
 
     def _only_obj(
-        self,
-        page_elements: List[Dict[str, Any]],
-        translateX: float = 0.0,
-        translateY: float = 0.0,
+            self,
+            page_elements: List[Dict[str, Any]],
+            translateX: float = 0.0,
+            translateY: float = 0.0,
     ) -> List[Dict[str, Any]]:
         only_objets: List[Any] = []
         for obj in page_elements:
@@ -1658,10 +1668,10 @@ class GoogleDriveUtilities(Serializable, BaseModel):
         return only_objets
 
     def _sort_page_elements(
-        self,
-        page_elements: List[Dict[str, Any]],
-        translateX: float = 0.0,
-        translateY: float = 0.0,
+            self,
+            page_elements: List[Dict[str, Any]],
+            translateX: float = 0.0,
+            translateY: float = 0.0,
     ) -> List[Dict[str, Any]]:
         only_obj = self._only_obj(page_elements, 0, 0)
         return sorted(
@@ -1711,7 +1721,7 @@ class GoogleDriveUtilities(Serializable, BaseModel):
                 metadata = self._extract_meta_data(file)
                 if "source" in metadata:
                     metadata["source"] = (
-                        metadata["source"] + "#slide=file_id." + slide["objectId"]
+                            metadata["source"] + "#slide=file_id." + slide["objectId"]
                     )
                 if "pageElements" in slide:
                     page_elements = self._sort_page_elements(slide["pageElements"])
@@ -1837,13 +1847,13 @@ class GoogleDriveAPIWrapper(GoogleDriveUtilities):
         snippets = []
         logger.debug(f"{query=}")
         for document in self.lazy_get_relevant_documents(
-            query=query, num_results=self.num_results
+                query=query, num_results=self.num_results
         ):
             content = document.page_content
             if (
-                self.mode in ["snippets", "snippets-markdown"]
-                and "summary" in document.metadata
-                and document.metadata["summary"]
+                    self.mode in ["snippets", "snippets-markdown"]
+                    and "summary" in document.metadata
+                    and document.metadata["summary"]
             ):
                 content = document.metadata["summary"]
             if self.mode == "snippets":
@@ -1860,7 +1870,7 @@ class GoogleDriveAPIWrapper(GoogleDriveUtilities):
                 snippets.append(
                     f"Name: {document.metadata['name']}\n"
                     f"Source: {document.metadata['source']}\n" + f"Summary: "
-                    f"{GoogleDriveUtilities._snippet_from_page_content(content)}"
+                                                                 f"{GoogleDriveUtilities._snippet_from_page_content(content)}"
                 )
             elif self.mode == "documents-markdown":
                 snippets.append(
@@ -1891,7 +1901,7 @@ class GoogleDriveAPIWrapper(GoogleDriveUtilities):
         """
         metadata_results = []
         for document in self.lazy_get_relevant_documents(
-            query=query, num_results=num_results
+                query=query, num_results=num_results
         ):
             metadata_result = {
                 "title": document.metadata["name"],

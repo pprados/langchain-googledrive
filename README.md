@@ -14,9 +14,9 @@ make test
 # Features:
 
 Langchain component:
-- [Document Loaders](docs/extras/integrations/document_loaders/google_drive.ipynb)
-- [Retrievers](docs/extras/integrations/retrievers/google_drive.ipynb)
-- [Toolkits](docs/extras/integrations/toolkits/google_drive.ipynb)
+- [Document Loaders](docs/integrations/document_loaders/google_drive.ipynb)
+- [Retrievers](docs/integrations/retrievers/google_drive.ipynb)
+- [Toolkits](docs/integrations/toolkits/google_drive.ipynb)
 
 Fully compatible with Google Drive API
 - Manage file in trash
