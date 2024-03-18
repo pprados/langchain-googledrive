@@ -1,5 +1,3 @@
-from collections import OrderedDict
-
 import io
 import json
 import logging
@@ -9,17 +7,8 @@ import re
 import tempfile
 import traceback
 import warnings
+from collections import OrderedDict
 from functools import partial
-from langchain_core.documents import BaseDocumentTransformer, Document
-from langchain_core.load.serializable import Serializable
-from langchain_core.pydantic_v1 import (
-    BaseModel,
-    Extra,
-    Field,
-    FilePath,
-    root_validator,
-    validator,
-)
 from pathlib import Path
 from typing import (
     Any,
@@ -38,6 +27,17 @@ from typing import (
     runtime_checkable, Sequence,
 )
 from uuid import UUID, uuid4
+
+from langchain_core.documents import BaseDocumentTransformer, Document
+from langchain_core.load.serializable import Serializable
+from langchain_core.pydantic_v1 import (
+    BaseModel,
+    Extra,
+    Field,
+    FilePath,
+    root_validator,
+    validator,
+)
 
 
 # BaseLoader=Any # Fix circular import
@@ -576,6 +576,9 @@ class GoogleDriveUtilities(Serializable, BaseModel):
     """Generate one document by line ("single"),
             or one document with markdown array and `<PAGE BREAK>` tags."""
 
+    gsheet_columns: Sequence[str] = []
+    """A sequence of column names to use in the body. Optional."""
+
     gsheet_metadata_columns: Sequence[str] = []
     """A sequence of column names to use as metadata. Optional."""
 
@@ -875,6 +878,10 @@ class GoogleDriveUtilities(Serializable, BaseModel):
         self._spreadsheets = None
         self._slides = None
 
+        if self.gsheet_mode != "elements":
+            if self.gsheet_columns or self.gsheet_metadata_columns:
+                raise ValueError("gsheet_columns and gsheet_metadata_columns must be "
+                                 "used with gsheet_mode == 'elements'")
         self._creds = self._load_credentials(self.scopes)
 
         from googleapiclient.discovery import build  # type: ignore
@@ -1497,7 +1504,7 @@ class GoogleDriveUtilities(Serializable, BaseModel):
                                     )
                                     split_cell[i] = portion + (
                                             " " * (
-                                                col_size[col_idx] - len(pure_portion))
+                                            col_size[col_idx] - len(pure_portion))
                                     )
                             # rebuild the body
                             row[col_idx] = "".join(split_cell)
@@ -1586,15 +1593,21 @@ class GoogleDriveUtilities(Serializable, BaseModel):
                 if self.gsheet_mode == "elements":
                     for i, row in enumerate(values[1:], start=1):
                         content = []
-                        for j, v in enumerate(row):
-                            title = (
-                                str(headers[j]).strip() + ": "
-                                if len(headers) > j
-                                else ""
-                            )
-                            content.append(f"{title}{str(v).strip()}")
+                        if self.gsheet_columns and len(self.gsheet_columns) == 1:
+                            raw_content = f"{row[headers.index(self.gsheet_columns[0])]}\n"
+                        else:
+                            for j, v in enumerate(row):
+                                if (not self.gsheet_columns
+                                        or str(headers[j]).strip()
+                                        in self.gsheet_columns):
+                                    title = (
+                                        str(headers[j]).strip() + ": "
+                                        if len(headers) > j
+                                        else ""
+                                    )
+                                    content.append(f"{title}{str(v).strip()}\n")
 
-                        raw_content = "\n".join(content)
+                            raw_content = "".join(content)
                         metadata = self._extract_meta_data(file)
                         if "source" in metadata:
                             metadata["source"] = (
