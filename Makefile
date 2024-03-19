@@ -1,5 +1,8 @@
 SHELL=/bin/bash
 .PHONY: all format lint test tests test_watch integration_tests docker_tests help extended_tests
+POETRY_EXTRA?=
+#POETRY_EXTRA?=--all-extras
+POETRY_WITH?=dev,lint,test
 
 # Default target executed when no arguments are given to make.
 all: help
@@ -188,3 +191,14 @@ endef
 
 push-sync:
 	$(call _push_sync)
+
+init: poetry.lock
+	@poetry self add poetry-dotenv-plugin
+	@poetry self add poetry-plugin-export
+	@poetry self add poetry-git-version-plugin
+	@poetry config warnings.export false
+	@poetry config virtualenvs.in-project true
+	@poetry install --sync $(POETRY_EXTRA) --with $(POETRY_WITH)
+#	@pre-commit install
+	@git lfs install
+	@git lfs track "*.pdf"

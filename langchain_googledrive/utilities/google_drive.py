@@ -1582,7 +1582,7 @@ class GoogleDriveUtilities(Serializable, BaseModel):
             sheet_name = sheet["properties"]["title"]
             result = (
                 self._spreadsheets.values()
-                .get(spreadsheetId=file["id"], range=sheet_name)
+                .get(spreadsheetId=file["id"], range=sheet_name, valueRenderOption="UNFORMATTED_VALUE")
                 .execute()
             )
             values = result.get("values", [])
