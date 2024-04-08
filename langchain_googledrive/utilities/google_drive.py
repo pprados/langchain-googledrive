@@ -237,6 +237,7 @@ def default_conv_loader(
             UnstructuredPDFLoader,
             UnstructuredPowerPointLoader,
             UnstructuredWordDocumentLoader,
+            UnstructuredExcelLoader,
         )
 
         try:
@@ -275,7 +276,7 @@ def default_conv_loader(
                 }
             )
         except ImportError:
-            logger.info("Ignore Epub for GDrive (no module named 'pypandoc'")
+            logger.info("Ignore Epub for GDrive (no module named 'pypandoc')")
 
         try:
             import pdf2image  # noqa: F401, F811
@@ -292,7 +293,7 @@ def default_conv_loader(
         except ImportError:
             logger.info(
                 "Ignore PDF for GDrive (no module named 'pdf2image' "
-                "and 'pytesseract'"
+                "and 'pytesseract')"
             )
 
         mime_types_mapping.update(
@@ -307,8 +308,10 @@ def default_conv_loader(
                 "wordprocessingml.document": cast(
                     TYPE_LOAD, partial(UnstructuredWordDocumentLoader, mode=mode)
                 ),  # DOCX
-                # "application/vnd.openxmlformats-officedocument.
-                # spreadsheetml.sheet": # XLSX
+                "application/vnd.openxmlformats-officedocument."
+                "spreadsheetml.sheet": cast(
+                    TYPE_LOAD, partial(UnstructuredExcelLoader, mode=mode)
+                ),  # XLSX
                 "application/vnd.oasis.opendocument.text": UnstructuredODTLoader,
             }
         )
