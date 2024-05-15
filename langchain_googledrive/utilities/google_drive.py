@@ -934,7 +934,7 @@ class GoogleDriveUtilities(Serializable, BaseModel):
             return "inaccessible-folder"
 
     def _get_file_by_id(self, file_id: str, **kwargs: Any) -> Dict:
-        get_kwargs = {**self._kwargs, **kwargs, **{"fields": self.fields}}
+        get_kwargs = {**self._kwargs, **self._gdrive_kwargs, **kwargs, **{"fields": self.fields}}
         get_kwargs = {
             key: get_kwargs[key]
             for key in get_kwargs
