@@ -1,5 +1,7 @@
+import os
 import unittest
 from pathlib import Path
+from unittest import mock
 from unittest.mock import MagicMock
 
 import pytest
@@ -12,6 +14,10 @@ from tests.unit_tests.utilities.test_google_drive import (
     gdrive_docs,
     google_workspace_installed,
     patch_google_workspace,
+)
+
+_credential = (
+    Path(__file__).parent.parent / "utilities" / "examples" / "gdrive_credentials.json"
 )
 
 
@@ -28,16 +34,19 @@ def test_get_relevant_documents(
 ) -> None:
     patch_google_workspace(mocker, [{"nextPageToken": None, "files": [_text_text]}])
     retriever = GoogleDriveRetriever(
-        api_file=Path(__file__).parent.parent
-        / "utilities"
-        / "examples"
-        / "gdrive_credentials.json",
+        gdrive_api_file=(
+            Path(__file__).parent.parent
+            / "utilities"
+            / "examples"
+            / "gdrive_credentials.json"
+        ),
     )
     docs = retriever.get_relevant_documents("machine learning")
     assert len(docs) == 1
 
 
 @unittest.skipIf(not google_workspace_installed, "Google api not installed")
+@mock.patch.dict(os.environ, {"GOOGLE_ACCOUNT_FILE": str(_credential)})
 def test_extra_parameters(
     mocker: MockerFixture,
 ) -> None:

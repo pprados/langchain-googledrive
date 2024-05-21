@@ -173,7 +173,7 @@ _application_word = {
     "id": "106",
     "name": "vnd.openxmlformats-officedocument.wordprocessingml.document.docx",
     "mimeType": "application/vnd.openxmlformats-officedocument."
-                "wordprocessingml.document",
+    "wordprocessingml.document",
     "owners": [{"displayName": "John Do"}],
     "webViewLink": "https://docs.google.com/document/d/106/edit?usp=drivesdk&sd=true",
     "webContentLink": "https://drive.google.com/uc?id=106&export=download",
@@ -227,9 +227,9 @@ not_gdrive_docs = list(
 
 
 def patch_google_workspace(
-        mocker: MockerFixture,
-        files_result: List[Dict] = [{"nextPageToken": None, "files": gdrive_docs}],
-        # noqa
+    mocker: MockerFixture,
+    files_result: List[Dict] = [{"nextPageToken": None, "files": gdrive_docs}],
+    # noqa
 ) -> MagicMock:
     """Patch google API with a specific list of files"""
     if not google_workspace_installed:
@@ -338,7 +338,7 @@ def patch_google_workspace(
 @unittest.skipIf(not google_workspace_installed, "Google api not installed")
 @mock.patch.dict(os.environ, {"GOOGLE_ACCOUNT_FILE": _credential})
 def test_auth_GOOGLE_ACCOUNT_FILE_user(
-        google_workspace: MagicMock,
+    google_workspace: MagicMock,
 ) -> None:
     GoogleDriveUtilities(
         api_file=None,
@@ -353,7 +353,7 @@ def test_auth_GOOGLE_ACCOUNT_FILE_user(
 @unittest.skipIf(not google_workspace_installed, "Google api not installed")
 @mock.patch.dict(os.environ, {"GOOGLE_ACCOUNT_FILE": _services})
 def test_auth_GOOGLE_ACCOUNT_FILE_service(
-        google_workspace: MagicMock,
+    google_workspace: MagicMock,
 ) -> None:
     GoogleDriveUtilities(
         api_file=None,
@@ -367,12 +367,12 @@ def test_auth_GOOGLE_ACCOUNT_FILE_service(
 
 @unittest.skipIf(not google_workspace_installed, "Google api not installed")
 def test_auth_GOOGLE_ACCOUNT_KEY_user(
-        google_workspace: MagicMock,
+    google_workspace: MagicMock,
 ) -> None:
     with io.open(
-            _credential,
-            "r",
-            encoding="utf-8-sig",
+        _credential,
+        "r",
+        encoding="utf-8-sig",
     ) as json_file:
         if "GOOGLE_ACCOUNT_FILE" in os.environ:
             del os.environ["GOOGLE_ACCOUNT_FILE"]
@@ -389,12 +389,12 @@ def test_auth_GOOGLE_ACCOUNT_KEY_user(
 
 @unittest.skipIf(not google_workspace_installed, "Google api not installed")
 def test_auth_GOOGLE_ACCOUNT_KEY_service(
-        google_workspace: MagicMock,
+    google_workspace: MagicMock,
 ) -> None:
     with io.open(
-            _services,
-            "r",
-            encoding="utf-8-sig",
+        _services,
+        "r",
+        encoding="utf-8-sig",
     ) as json_file:
         if "GOOGLE_ACCOUNT_FILE" in os.environ:
             del os.environ["GOOGLE_ACCOUNT_FILE"]
@@ -412,7 +412,7 @@ def test_auth_GOOGLE_ACCOUNT_KEY_service(
 # %%
 @unittest.skipIf(not google_workspace_installed, "Google api not installed")
 def test_load_returns_list_of_google_documents_single(
-        google_workspace: MagicMock,
+    google_workspace: MagicMock,
 ) -> None:
     utilities = GoogleDriveUtilities(
         api_file=Path(_credential),
@@ -512,9 +512,10 @@ def test_load_with_gsheet_mode_elements(mocker: MockerFixture) -> None:
     assert isinstance(docs, list)
     assert all(isinstance(doc, Document) for doc in docs)
     assert len(docs) == 4
-    assert docs[0].page_content == 'a: 1\nb: 2\n'
+    assert docs[0].page_content == "a: 1\nb: 2\n"
     assert docs[0].metadata["a"] == 1
     assert docs[0].metadata["b"] == 2
+
 
 @unittest.skipIf(not google_workspace_installed, "Google api not installed")
 def test_load_with_gsheet_mode_elements_with_on_column(mocker: MockerFixture) -> None:
@@ -533,10 +534,9 @@ def test_load_with_gsheet_mode_elements_with_on_column(mocker: MockerFixture) ->
     assert isinstance(docs, list)
     assert all(isinstance(doc, Document) for doc in docs)
     assert len(docs) == 4
-    assert docs[0].page_content == '1\n'
+    assert docs[0].page_content == "1\n"
     assert docs[0].metadata["a"] == 1
     assert docs[0].metadata["b"] == 2
-
 
 
 @unittest.skipIf(not google_workspace_installed, "Google api not installed")
@@ -600,8 +600,8 @@ def test_link_field(google_workspace: MagicMock) -> None:
     )
     docs = list(utilities.lazy_get_relevant_documents())
     assert (
-               docs[0].metadata["source"]
-           ) == "https://docs.google.com/document/d/1/edit?usp=drivesdk"
+        docs[0].metadata["source"]
+    ) == "https://docs.google.com/document/d/1/edit?usp=drivesdk"
 
     utilities = GoogleDriveUtilities(
         api_file=Path(_credential),
@@ -615,8 +615,8 @@ def test_link_field(google_workspace: MagicMock) -> None:
     )
     docs = list(utilities.lazy_get_relevant_documents())
     assert (
-               docs[0].metadata["source"]
-           ) == "https://drive.google.com/uc?id=1&export=download"
+        docs[0].metadata["source"]
+    ) == "https://drive.google.com/uc?id=1&export=download"
 
 
 @unittest.skipIf(not google_workspace_installed, "Google api not installed")
@@ -652,8 +652,8 @@ def test_load_document_with_no_link_in_file(mocker: MockerFixture) -> None:
     docs = list(utilities.lazy_get_relevant_documents())
 
     assert (
-            docs[0].metadata["source"]
-            == "https://docs.google.com/document/d/1/edit?usp=drivesdk"
+        docs[0].metadata["source"]
+        == "https://docs.google.com/document/d/1/edit?usp=drivesdk"
     )
     utilities = GoogleDriveUtilities(
         api_file=Path(_credential),
@@ -667,8 +667,8 @@ def test_load_document_with_no_link_in_file(mocker: MockerFixture) -> None:
     )
     docs = list(utilities.lazy_get_relevant_documents())
     assert (
-            docs[0].metadata["source"]
-            == "https://docs.google.com/document/uc?1&export=download"
+        docs[0].metadata["source"]
+        == "https://docs.google.com/document/uc?1&export=download"
     )
 
 
@@ -689,7 +689,7 @@ def test_load_with_template_query(google_workspace: MagicMock) -> None:
 
 @unittest.skipIf(not google_workspace_installed, "Google api not installed")
 def test_load_with_template_query_with_mime_type_and_folders(
-        google_workspace: MagicMock,
+    google_workspace: MagicMock,
 ) -> None:
     utilities = GoogleDriveUtilities(
         api_file=Path(_credential),
@@ -965,7 +965,7 @@ def test_load_sheets_from_id_with_elements(google_workspace: MagicMock) -> None:
         folder_id=mime_application_folder,
         template="gdrive-all-in-folder",
         gsheet_mode="elements",
-        gsheet_metadata_columns=["a"]
+        gsheet_metadata_columns=["a"],
     )
     docs = utilities.load_sheets_from_id(file_id="3")
     assert isinstance(docs, list)
@@ -1010,8 +1010,7 @@ def test_snippet_from_page_content() -> None:
     assert GoogleDriveUtilities._snippet_from_page_content("ABCDEFG", 6) == "ABC..."
     assert GoogleDriveUtilities._snippet_from_page_content("ABCDEFGHI", 6) == "ABC..."
     assert (
-            GoogleDriveUtilities._snippet_from_page_content("ABCDEFGHIJ",
-                                                            6) == "ABC...HIJ"
+        GoogleDriveUtilities._snippet_from_page_content("ABCDEFGHIJ", 6) == "ABC...HIJ"
     )
 
 
@@ -1100,6 +1099,7 @@ def test_no_query(google_workspace: MagicMock) -> None:
     )
     wrapper.run("")
     assert "''" not in wrapper.files.list.call_args[1]["q"]
+
 
 # Private test with a directory with a sample of all file format
 # @unittest.skipIf(not google_workspace_installed, "Google api not installed")

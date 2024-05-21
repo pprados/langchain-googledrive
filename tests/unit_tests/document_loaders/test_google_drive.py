@@ -120,7 +120,7 @@ def test_update_description_with_summary(google_workspace: MagicMock) -> None:
 ## --------- Test deprecated API --------------
 
 
-# @deprected
+# @deprecated
 @unittest.skipIf(not google_workspace_installed, "Google api not installed")
 @mock.patch.dict(os.environ, {}, clear=True)
 def test_auth_credentials_path(
@@ -136,7 +136,7 @@ def test_auth_credentials_path(
     assert google_workspace.credentials.from_authorized_user_info.called
 
 
-# @deprected
+# @deprecated
 @unittest.skipIf(not google_workspace_installed, "Google api not installed")
 @mock.patch.dict(os.environ, {}, clear=True)
 def test_auth_service_account_key(

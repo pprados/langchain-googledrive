@@ -2,7 +2,7 @@ SHELL=/bin/bash
 .PHONY: all format lint test tests test_watch integration_tests docker_tests help extended_tests
 POETRY_EXTRA?=
 #POETRY_EXTRA?=--all-extras
-POETRY_WITH?=dev,lint,test
+POETRY_WITH?=dev,lint,test,codespell
 
 # Default target executed when no arguments are given to make.
 all: help
@@ -46,6 +46,8 @@ spell_check:
 spell_fix:
 	poetry run codespell --toml pyproject.toml -w
 
+## Validate the code (invoked before commit)
+validate: format lint spell_check test
 
 ######################
 # DOCUMENTATION
