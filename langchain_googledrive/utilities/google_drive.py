@@ -963,8 +963,9 @@ class GoogleDriveUtilities(Serializable, BaseModel):
             suffix = Path(file["name"]).suffix
         if suffix not in self._not_supported:  # Already see this suffix?
             try:
-                with tempfile.NamedTemporaryFile(mode="w", suffix=suffix) as tf:
-                    path = tf.name
+                with tempfile.TemporaryDirectory() as temp_dir:
+                    unique_filename = str(uuid4()) + suffix
+                    path = os.path.join(temp_dir, unique_filename)
                     logger.debug(
                         f"Get '{file['name']}' with type "
                         f"'{file.get('mimeType', 'unknown')}'"
@@ -972,15 +973,14 @@ class GoogleDriveUtilities(Serializable, BaseModel):
 
                     request = self.files.get_media(fileId=file["id"])
 
-                    fh = io.FileIO(path, mode="wb")
                     try:
-                        downloader = MediaIoBaseDownload(fh, request)
-                        done = False
-                        while done is False:
-                            status, done = downloader.next_chunk()
-
+                        with open(path, 'wb') as tf:
+                            downloader = MediaIoBaseDownload(tf, request)
+                            done = False
+                            while not done:
+                                status, done = downloader.next_chunk()
                     finally:
-                        fh.close()
+                        tf.close()
 
                     if self.file_loader_cls:
                         # Deprecated
