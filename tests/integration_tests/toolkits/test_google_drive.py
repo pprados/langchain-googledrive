@@ -20,8 +20,8 @@ def test_google_drive() -> None:
     print(tool.description)
 
     # %%
-    from langchain_openai import OpenAI
     from langchain.agents import AgentType, initialize_agent
+    from langchain_openai import OpenAI
 
     llm = OpenAI(temperature=0)
     agent = initialize_agent(

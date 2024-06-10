@@ -10,8 +10,8 @@ packages = [{ include = "langchain_googledrive" }]
 
 [tool.poetry.dependencies]
 python = "^3.8.1"
-langchain_core = ">=0.2.1"
-langchain_community = ">=0.2.1"
+langchain_core = ">=0.2.5"
+langchain_community = ">=0.2.4"
 google-api-python-client = "^2.97"
 google-auth-httplib2 = ">=0.1"
 google-auth-oauthlib = ">=1.0"
@@ -30,9 +30,9 @@ all = [
 optional = true
 
 [tool.poetry.group.dev.dependencies]
-jupyter = "^1.0.0"
-playwright = "^1.28.0"
-setuptools = "^68.1.2"
+jupyter = "^1.0"
+playwright = "^1.28"
+setuptools = "^68.1"
 
 [tool.poetry.group.test]
 optional = true
@@ -41,15 +41,15 @@ optional = true
 # The only dependencies that should be added are
 # dependencies used for running tests (e.g., pytest, freezegun, response).
 # Any dependencies that do not meet that criteria will be removed.
-pytest = "^7.3.0"
-pytest-cov = "^4.0.0"
-pytest-dotenv = "^0.5.2"
-pytest-watcher = "^0.2.6"
-pytest-asyncio = "^0.20.3"
-pytest-mock = "^3.10.0"
-pytest-socket = "^0.6.0"
-twine = "^4.0.0"
-langchain-openai = ">=0.1.7"
+pytest = "^7.3"
+pytest-cov = "^4.0"
+pytest-dotenv = "^0.5"
+pytest-watcher = "^0.2"
+pytest-asyncio = "^0.20"
+pytest-mock = "^3.10"
+pytest-socket = "^0.6"
+twine = "^4.0"
+langchain-openai = ">=0.1"
 
 [tool.poetry.group.lint]
 optional = true

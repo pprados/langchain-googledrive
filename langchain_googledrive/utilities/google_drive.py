@@ -548,6 +548,14 @@ class GoogleDriveUtilities(Serializable, BaseModel):
     mode: str = "documents"
     """Return the document."""
 
+    suggestionsViewMode: Literal[
+        "DEFAULT_FOR_CURRENT_ACCESS",
+        "SUGGESTIONS_INLINE",
+        "PREVIEW_SUGGESTIONS_ACCEPTED",
+        "PREVIEW_WITHOUT_SUGGESTIONS",
+    ] = "DEFAULT_FOR_CURRENT_ACCESS"
+    """The view mode of the suggestions."""
+
     recursive: bool = False
     """If `true`, search in the `folder_id` and sub folders."""
 
@@ -974,7 +982,7 @@ class GoogleDriveUtilities(Serializable, BaseModel):
                     request = self.files.get_media(fileId=file["id"])
 
                     try:
-                        with open(path, 'wb') as tf:
+                        with open(path, "wb") as tf:
                             downloader = MediaIoBaseDownload(tf, request)
                             done = False
                             while not done:
@@ -1583,7 +1591,9 @@ class GoogleDriveUtilities(Serializable, BaseModel):
         if file["mimeType"] != "application/vnd.google-apps.spreadsheet":
             logger.warning(f"File with id '{file['id']}' is not a GSheet")
             return
-        spreadsheet = self._spreadsheets.get(spreadsheetId=file["id"]).execute()
+        spreadsheet = self._spreadsheets.get(
+            spreadsheetId=file["id"], suggestionsViewMode=self.suggestionsViewMode
+        ).execute()
         sheets = spreadsheet.get("sheets", [])
         single: List[str] = []
 
@@ -1716,7 +1726,9 @@ class GoogleDriveUtilities(Serializable, BaseModel):
         if file["mimeType"] != "application/vnd.google-apps.presentation":
             logger.warning(f"File with id '{file['id']}' is not a GSlide")
             return
-        gslide = self._slides.get(presentationId=file["id"]).execute()
+        gslide = self._slides.get(
+            presentationId=file["id"], suggestionsViewMode=self.suggestionsViewMode
+        ).execute()
         if self.gslide_mode == "single":
             lines = []
             for slide in gslide["slides"]:
@@ -1770,7 +1782,9 @@ class GoogleDriveUtilities(Serializable, BaseModel):
         if file["mimeType"] != "application/vnd.google-apps.document":
             logger.warning(f"File with id '{file['id']}' is not a GDoc")
         else:
-            gdoc = self._docs.get(documentId=file["id"]).execute()
+            gdoc = self._docs.get(
+                documentId=file["id"], suggestionsViewMode=self.suggestionsViewMode
+            ).execute()
             text = self._extract_text(gdoc["body"]["content"])
             yield Document(
                 page_content="\n".join(text), metadata=self._extract_meta_data(file)
