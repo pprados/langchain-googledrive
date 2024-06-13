@@ -1592,7 +1592,7 @@ class GoogleDriveUtilities(Serializable, BaseModel):
             logger.warning(f"File with id '{file['id']}' is not a GSheet")
             return
         spreadsheet = self._spreadsheets.get(
-            spreadsheetId=file["id"], suggestionsViewMode=self.suggestionsViewMode
+            spreadsheetId=file["id"]
         ).execute()
         sheets = spreadsheet.get("sheets", [])
         single: List[str] = []
@@ -1727,7 +1727,7 @@ class GoogleDriveUtilities(Serializable, BaseModel):
             logger.warning(f"File with id '{file['id']}' is not a GSlide")
             return
         gslide = self._slides.get(
-            presentationId=file["id"], suggestionsViewMode=self.suggestionsViewMode
+            presentationId=file["id"],
         ).execute()
         if self.gslide_mode == "single":
             lines = []
