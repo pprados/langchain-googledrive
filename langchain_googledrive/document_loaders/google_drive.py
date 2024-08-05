@@ -10,6 +10,7 @@ from typing import (
     Optional,
     Protocol,
     Sequence,
+    cast,
 )
 
 from langchain_community.document_loaders.base import BaseLoader
@@ -258,11 +259,23 @@ class GoogleDriveLoader(BaseLoader, GoogleDriveUtilities):
             from langchain.chains.summarize import load_summarize_chain
         except ImportError:
             raise ValueError("pip install langchain for this method")
-        if "https://www.googleapis.com/auth/drive" not in self._creds.scopes:
-            raise ValueError(
-                f"Remove the file 'token.json' and "
-                f"initialize the {self.__class__.__name__} with "
-                f"scopes=['https://www.googleapis.com/auth/drive']"
+        try:
+            from google.oauth2.credentials import Credentials  # type: ignore
+
+            credentials = cast(Credentials, self.credentials)
+            if "https://www.googleapis.com/auth/drive" not in credentials.scopes:
+                raise ValueError(
+                    f"Remove the file 'token.json' and "
+                    f"initialize the {self.__class__.__name__} with "
+                    f"scopes=['https://www.googleapis.com/auth/drive']"
+                )
+        except ImportError:
+            raise ImportError(
+                "You must run "
+                "`pip install --upgrade "
+                "google-api-python-client google-auth-httplib2 "
+                "google-auth-oauthlib` "
+                "to use the Google Drive loader."
             )
 
         chain = load_summarize_chain(llm, chain_type="stuff", **kwargs)

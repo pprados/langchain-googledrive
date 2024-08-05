@@ -18,3 +18,4 @@ dist/
 *.egg-info/
 docs/_dist
 .ipynb_checkpoints
+.github

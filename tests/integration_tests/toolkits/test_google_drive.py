@@ -21,9 +21,9 @@ def test_google_drive() -> None:
 
     # %%
     from langchain.agents import AgentType, initialize_agent
-    from langchain_openai import OpenAI
+    from langchain_openai import ChatOpenAI
 
-    llm = OpenAI(temperature=0)
+    llm = ChatOpenAI(model_name="gpt-4o-mini", temperature=0)
     agent = initialize_agent(
         tools=[tool],
         llm=llm,

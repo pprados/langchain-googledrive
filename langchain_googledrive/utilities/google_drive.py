@@ -29,6 +29,7 @@ from typing import (
 )
 from uuid import UUID, uuid4
 
+from google.auth.credentials import Credentials
 from langchain_core.documents import BaseDocumentTransformer, Document
 from langchain_core.load.serializable import Serializable
 from langchain_core.pydantic_v1 import (
@@ -481,6 +482,9 @@ class GoogleDriveUtilities(Serializable, BaseModel):
         """Google workspakce files interface"""
         return self._files
 
+    credentials: Optional[Credentials] = None
+    """ The credentials to use the Google API. """
+
     service_account_key: Optional[Path] = None
     """DEPRECATED Path to the service account key file."""
     credentials_path: Optional[Path] = None
@@ -495,8 +499,15 @@ class GoogleDriveUtilities(Serializable, BaseModel):
 
     not_data = uuid4()
 
-    @validator("gdrive_api_file", always=True)
-    def validate_api_file(cls, api_file: Optional[FilePath]) -> Optional[FilePath]:
+    @validator("gdrive_api_file", pre=True, always=True)
+    def validate_api_file(
+        cls,
+        api_file: Optional[str],
+        values: Dict[str, Any],
+    ) -> Optional[FilePath]:
+        if values.get("credentials"):
+            return None
+        path_api_file = Path(api_file) if api_file else None
         if not api_file:
             env_api_file = os.environ.get("GOOGLE_ACCOUNT_FILE")
             if not env_api_file:
@@ -505,15 +516,15 @@ class GoogleDriveUtilities(Serializable, BaseModel):
                         "set GOOGLE_ACCOUNT_FILE or GOOGLE_ACCOUNT_KEY "
                         "environment variable"
                     )
-                api_file = None
+                path_api_file = None
             else:
-                api_file = Path(env_api_file)
+                path_api_file = Path(env_api_file)
         else:
             if api_file is None:
                 raise ValueError("gdrive_api_file must be set")
-        if api_file and not api_file.exists():
+        if path_api_file and not path_api_file.exists():
             raise ValueError(f"Api file '{api_file}' does not exist")
-        return api_file
+        return path_api_file
 
     @root_validator
     def validate_template(cls, values: Dict[str, Any]) -> Dict[str, Any]:
@@ -706,7 +717,6 @@ class GoogleDriveUtilities(Serializable, BaseModel):
     _docs = Field(allow_mutation=True)
     _spreadsheets = Field(allow_mutation=True)
     _slides = Field(allow_mutation=True)
-    _creds = Field(allow_mutation=True)
     _gdrive_kwargs: Dict[str, Any] = Field(allow_mutation=True)
     _kwargs: Dict[str, Any] = Field(allow_mutation=True)
     _folder_name_cache: _LRUCache = Field(default_factory=_LRUCache)
@@ -764,7 +774,9 @@ class GoogleDriveUtilities(Serializable, BaseModel):
         try:
             from google.auth.transport.requests import Request
             from google.oauth2 import service_account  # type: ignore
-            from google.oauth2.credentials import Credentials  # type: ignore
+            from google.oauth2.credentials import (
+                Credentials as GoogleCredentials,  # type: ignore
+            )
             from google_auth_oauthlib.flow import InstalledAppFlow  # type: ignore
         except ImportError:
             raise ImportError(
@@ -805,8 +817,11 @@ class GoogleDriveUtilities(Serializable, BaseModel):
             return service_account.Credentials.from_service_account_info(
                 info, scopes=scopes
             )
-
-        creds = Credentials.from_authorized_user_info(token, scopes) if token else None
+        creds = (
+            GoogleCredentials.from_authorized_user_info(token, scopes)
+            if token
+            else None
+        )
 
         if not creds or not creds.valid:
             if creds and (creds.expired or creds.refresh_token):
@@ -896,18 +911,21 @@ class GoogleDriveUtilities(Serializable, BaseModel):
                     "gsheet_columns and gsheet_metadata_columns must be "
                     "used with gsheet_mode == 'elements'"
                 )
-        self._creds = self._load_credentials(self.scopes)
+        if not self.credentials:
+            self.credentials = self._load_credentials(self.scopes)
 
         from googleapiclient.discovery import build  # type: ignore
 
         # self._params_dict: Dict[str, Union[str, int, float]] = {}
 
-        self._files = build("drive", "v3", credentials=self._creds).files()
-        self._docs = build("docs", "v1", credentials=self._creds).documents()
+        self._files = build("drive", "v3", credentials=self.credentials).files()
+        self._docs = build("docs", "v1", credentials=self.credentials).documents()
         self._spreadsheets = build(
-            "sheets", "v4", credentials=self._creds
+            "sheets", "v4", credentials=self.credentials
         ).spreadsheets()
-        self._slides = build("slides", "v1", credentials=self._creds).presentations()
+        self._slides = build(
+            "slides", "v1", credentials=self.credentials
+        ).presentations()
 
         # Gdrive parameters
         self._gdrive_kwargs = {
@@ -1591,9 +1609,7 @@ class GoogleDriveUtilities(Serializable, BaseModel):
         if file["mimeType"] != "application/vnd.google-apps.spreadsheet":
             logger.warning(f"File with id '{file['id']}' is not a GSheet")
             return
-        spreadsheet = self._spreadsheets.get(
-            spreadsheetId=file["id"]
-        ).execute()
+        spreadsheet = self._spreadsheets.get(spreadsheetId=file["id"]).execute()
         sheets = spreadsheet.get("sheets", [])
         single: List[str] = []
 
