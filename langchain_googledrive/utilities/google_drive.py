@@ -32,7 +32,7 @@ from uuid import UUID, uuid4
 from google.auth.credentials import Credentials
 from langchain_core.documents import BaseDocumentTransformer, Document
 from langchain_core.load.serializable import Serializable
-from langchain_core.pydantic_v1 import (
+from pydantic import (
     BaseModel,
     Extra,
     Field,
@@ -40,6 +40,8 @@ from langchain_core.pydantic_v1 import (
     root_validator,
     validator,
 )
+from pydantic import ConfigDict
+
 
 
 # BaseLoader=Any # Fix circular import
@@ -470,12 +472,7 @@ class GoogleDriveUtilities(Serializable, BaseModel):
     ```
     """
 
-    class Config:
-        extra="allow"
-        underscore_attrs_are_private = True
-        arbitrary_types_allowed = True
-        allow_mutation = True  # deprecated. Only for back compatibility
-        # validate_assignment = True  # deprecated. Only for back compatibility
+    model_config = ConfigDict(extra="allow",underscore_attrs_are_private=True,arbitrary_types_allowed=True,allow_mutation=True,)
 
     @property
     def files(self) -> Any:
@@ -1862,9 +1859,7 @@ class GoogleDriveAPIWrapper(GoogleDriveUtilities):
     Use a specific template if you want a different approach.
     """
 
-    class Config:
-        extra="allow"
-        underscore_attrs_are_private = True
+    model_config = ConfigDict(extra="allow",underscore_attrs_are_private=True,)
 
     mode: Literal[
         "snippets", "snippets-markdown", "documents", "documents-markdown"

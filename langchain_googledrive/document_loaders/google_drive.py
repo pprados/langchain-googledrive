@@ -16,7 +16,7 @@ from typing import (
 from langchain_community.document_loaders.base import BaseLoader
 from langchain_core.documents import Document
 from langchain_core.language_models import BaseLanguageModel
-from langchain_core.pydantic_v1 import root_validator
+from pydantic import root_validator
 
 from ..utilities.google_drive import (
     GoogleDriveUtilities,

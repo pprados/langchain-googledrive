@@ -10,7 +10,7 @@ from unittest.mock import MagicMock
 import pytest
 from langchain_core.documents import Document
 from langchain_core.prompts import PromptTemplate
-from langchain_core.pydantic_v1 import BaseModel
+from pydantic import BaseModel
 from pytest_mock import MockerFixture
 
 # from langchain_googledrive.utilities import GoogleDriveAPIWrapper

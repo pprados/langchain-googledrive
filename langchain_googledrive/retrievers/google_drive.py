@@ -5,13 +5,15 @@ from langchain_core.callbacks.manager import (
     CallbackManagerForRetrieverRun,
 )
 from langchain_core.documents import Document
-from langchain_core.pydantic_v1 import Extra, root_validator
+from pydantic import Extra, root_validator
 from langchain_core.retrievers import BaseRetriever
 
 from ..utilities.google_drive import (
     GoogleDriveUtilities,
     get_template,
 )
+from pydantic import ConfigDict
+
 
 
 class GoogleDriveRetriever(GoogleDriveUtilities, BaseRetriever):
@@ -24,10 +26,7 @@ class GoogleDriveRetriever(GoogleDriveUtilities, BaseRetriever):
     (https://developers.google.com/workspace/guides/auth-overview).
     """
 
-    class Config:
-        extra="allow"
-        allow_mutation = True  # deprecated
-        underscore_attrs_are_private = True
+    model_config = ConfigDict(extra="allow",allow_mutation=True,underscore_attrs_are_private=True,)
 
     mode: Literal[
         "snippets", "snippets-markdown", "documents", "documents-markdown"
