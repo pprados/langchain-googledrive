@@ -5,7 +5,7 @@ from langchain_core.callbacks.manager import (
     CallbackManagerForRetrieverRun,
 )
 from langchain_core.documents import Document
-from pydantic import Extra, root_validator
+from pydantic import Extra, root_validator, model_validator
 from langchain_core.retrievers import BaseRetriever
 
 from ..utilities.google_drive import (
@@ -32,8 +32,9 @@ class GoogleDriveRetriever(GoogleDriveUtilities, BaseRetriever):
         "snippets", "snippets-markdown", "documents", "documents-markdown"
     ] = "snippets-markdown"
 
-    @root_validator(pre=True)
-    def validate_template(cls, v: Dict[str, Any]) -> Dict[str, Any]:
+    @model_validator(mode="before")
+    @classmethod
+    def validate_template(cls, v: Dict[str, Any]) -> Any:
         folder_id = v.get("folder_id")
 
         if not v.get("template"):

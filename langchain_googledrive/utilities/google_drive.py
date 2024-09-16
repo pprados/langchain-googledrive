@@ -38,7 +38,7 @@ from pydantic import (
     Field,
     FilePath,
     root_validator,
-    validator, PrivateAttr,
+    validator, PrivateAttr, model_validator,
 )
 from pydantic import ConfigDict
 
@@ -532,8 +532,9 @@ class GoogleDriveUtilities(Serializable, BaseModel):
         values["template"] = template
         return values
 
-    @root_validator(pre=True)
-    def validate_file_loader_cls(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+    @model_validator(mode="before")
+    @classmethod
+    def validate_file_loader_cls(cls, values: Dict[str, Any]) -> Any:
         if values.get("file_loader_cls") or values.get("file_loader_kwargs"):
             warnings.warn(
                 "file_loader_cls and file_loader_kwargs "
@@ -1884,8 +1885,9 @@ class GoogleDriveAPIWrapper(GoogleDriveUtilities):
         None,
     ] = None
 
-    @root_validator(pre=True)
-    def validate_template(cls, v: Dict[str, Any]) -> Dict[str, Any]:
+    @model_validator(mode="before")
+    @classmethod
+    def validate_template(cls, v: Dict[str, Any]) -> Any:
         folder_id = v.get("folder_id")
 
         if "template" not in v:
