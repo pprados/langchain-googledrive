@@ -38,7 +38,7 @@ from pydantic import (
     Field,
     FilePath,
     root_validator,
-    validator,
+    validator, PrivateAttr,
 )
 from pydantic import ConfigDict
 
@@ -710,15 +710,15 @@ class GoogleDriveUtilities(Serializable, BaseModel):
     """
 
     # Private fields
-    _files = Field(allow_mutation=True)
-    _docs = Field(allow_mutation=True)
-    _spreadsheets = Field(allow_mutation=True)
-    _slides = Field(allow_mutation=True)
-    _gdrive_kwargs: Dict[str, Any] = Field(allow_mutation=True)
-    _kwargs: Dict[str, Any] = Field(allow_mutation=True)
-    _folder_name_cache: _LRUCache = Field(default_factory=_LRUCache)
-    _not_supported: Set = Field(default_factory=set)
-    _no_data: UUID = Field(default_factory=uuid4)
+    _files = PrivateAttr(allow_mutation=True)
+    _docs = PrivateAttr(allow_mutation=True)
+    _spreadsheets = PrivateAttr(allow_mutation=True)
+    _slides = PrivateAttr(allow_mutation=True)
+    _gdrive_kwargs: Dict[str, Any] = PrivateAttr(allow_mutation=True)
+    _kwargs: Dict[str, Any] = PrivateAttr(allow_mutation=True)
+    _folder_name_cache: _LRUCache = PrivateAttr(default_factory=_LRUCache)
+    _not_supported: Set = PrivateAttr(default_factory=set)
+    _no_data: UUID = PrivateAttr(default_factory=uuid4)
 
     # Class var
     _default_page_size: ClassVar[int] = 50
