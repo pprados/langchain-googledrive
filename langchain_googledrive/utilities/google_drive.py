@@ -471,7 +471,7 @@ class GoogleDriveUtilities(Serializable, BaseModel):
     """
 
     class Config:
-        extra = Extra.allow
+        extra="allow"
         underscore_attrs_are_private = True
         arbitrary_types_allowed = True
         allow_mutation = True  # deprecated. Only for back compatibility
@@ -1863,7 +1863,7 @@ class GoogleDriveAPIWrapper(GoogleDriveUtilities):
     """
 
     class Config:
-        extra = Extra.allow
+        extra="allow"
         underscore_attrs_are_private = True
 
     mode: Literal[

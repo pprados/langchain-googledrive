@@ -25,7 +25,7 @@ class GoogleDriveRetriever(GoogleDriveUtilities, BaseRetriever):
     """
 
     class Config:
-        extra = Extra.allow
+        extra="allow"
         allow_mutation = True  # deprecated
         underscore_attrs_are_private = True
 
