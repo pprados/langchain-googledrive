@@ -388,5 +388,7 @@ class FakeAsyncCallbackHandler(AsyncCallbackHandler, BaseFakeCallbackHandlerMixi
     ) -> None:
         self.on_text_common()
 
-    def __deepcopy__(self, memo: dict[int, Any] | None = None) -> "FakeAsyncCallbackHandler":
+    def __deepcopy__(
+        self, memo: dict[int, Any] | None = None
+    ) -> "FakeAsyncCallbackHandler":
         return self

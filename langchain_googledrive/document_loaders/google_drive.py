@@ -16,7 +16,7 @@ from typing import (
 from langchain_community.document_loaders.base import BaseLoader
 from langchain_core.documents import Document
 from langchain_core.language_models import BaseLanguageModel
-from pydantic import root_validator, model_validator
+from pydantic import model_validator, root_validator
 
 from ..utilities.google_drive import (
     GoogleDriveUtilities,
@@ -34,8 +34,7 @@ class PromptTemplate(Protocol):
     input_variables: List[str]
     template: str
 
-    def format(self, **kwargs: Any) -> str:
-        ...
+    def format(self, **kwargs: Any) -> str: ...
 
 
 logger = logging.getLogger(__name__)

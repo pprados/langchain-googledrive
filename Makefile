@@ -13,7 +13,7 @@ TEST_FILE ?= tests/unit_tests/
 test:
 	poetry run pytest -v $(TEST_FILE)
 
-tests: 
+tests:
 	poetry run pytest -v $(TEST_FILE)
 
 test_watch:
@@ -38,7 +38,7 @@ lint lint_diff:
 
 format format_diff:
 	poetry run black $(PYTHON_FILES)
-	poetry run ruff --select I --fix $(PYTHON_FILES)
+	poetry run ruff check --select I --fix $(PYTHON_FILES)
 
 spell_check:
 	poetry run codespell --toml pyproject.toml

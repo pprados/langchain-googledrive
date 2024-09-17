@@ -5,20 +5,20 @@ from langchain_core.callbacks.manager import (
     CallbackManagerForRetrieverRun,
 )
 from langchain_core.documents import Document
+from langchain_core.retrievers import BaseRetriever
 from pydantic import (
+    ConfigDict,
     Extra,
     ValidationInfo,
     ValidatorFunctionWrapHandler,
-    root_validator,
     model_validator,
+    root_validator,
 )
-from langchain_core.retrievers import BaseRetriever
 
 from ..utilities.google_drive import (
     GoogleDriveUtilities,
     get_template,
 )
-from pydantic import ConfigDict
 
 
 class GoogleDriveRetriever(GoogleDriveUtilities, BaseRetriever):

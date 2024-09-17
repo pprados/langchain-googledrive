@@ -34,15 +34,15 @@ from langchain_core.documents import BaseDocumentTransformer, Document
 from langchain_core.load.serializable import Serializable
 from pydantic import (
     BaseModel,
+    ConfigDict,
     Field,
     FilePath,
+    PrivateAttr,
     ValidationInfo,
     ValidatorFunctionWrapHandler,
     field_validator,
-    PrivateAttr,
     model_validator,
 )
-from pydantic import ConfigDict
 
 
 # BaseLoader=Any # Fix circular import
@@ -1290,9 +1290,11 @@ class GoogleDriveUtilities(Serializable, BaseModel):
             **self._gdrive_kwargs,
             **kwargs,
             **{
-                "pageSize": max(100, int(num_results * 1.5))
-                if num_results > 0
-                else GoogleDriveUtilities._default_page_size,
+                "pageSize": (
+                    max(100, int(num_results * 1.5))
+                    if num_results > 0
+                    else GoogleDriveUtilities._default_page_size
+                ),
                 "fields": f"nextPageToken, files({self.fields})",
                 "q": query_str,
             },
@@ -1383,9 +1385,11 @@ class GoogleDriveUtilities(Serializable, BaseModel):
                             **self._gdrive_kwargs,
                             **kwargs,
                             **{
-                                "pageSize": max(100, int(num_results * 1.5))
-                                if num_results > 0
-                                else GoogleDriveUtilities._default_page_size,
+                                "pageSize": (
+                                    max(100, int(num_results * 1.5))
+                                    if num_results > 0
+                                    else GoogleDriveUtilities._default_page_size
+                                ),
                                 "fields": "nextPageToken, "
                                 "files(id,name, mimeType, shortcutDetails)",
                             },
