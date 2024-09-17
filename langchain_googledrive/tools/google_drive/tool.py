@@ -15,8 +15,8 @@ logger = logging.getLogger(__name__)
 class GoogleDriveSearchTool(BaseTool):
     """Tool that adds the capability to query the Google Drive search API."""
 
-    name = "Google Drive Search"
-    description = (
+    name: str = "Google Drive Search"
+    description: str = (
         "A wrapper around Google Drive Search. "
         "Useful for when you need to find a document in google drive. "
         f"{FORMAT_INSTRUCTION}"

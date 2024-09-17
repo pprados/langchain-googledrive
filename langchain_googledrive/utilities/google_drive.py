@@ -37,11 +37,15 @@ from pydantic import (
     Extra,
     Field,
     FilePath,
+    ValidationInfo,
+    ValidatorFunctionWrapHandler,
+    field_validator,
     root_validator,
-    validator, PrivateAttr, model_validator,
+    validator,
+    PrivateAttr,
+    model_validator,
 )
 from pydantic import ConfigDict
-
 
 
 # BaseLoader=Any # Fix circular import
@@ -58,20 +62,17 @@ class BaseLoader(Protocol):
     # Sub-classes should implement this method
     # as return list(self.lazy_load()).
     # This method returns a List which is materialized in memory.
-    def load(self) -> List[Document]:
-        ...
+    def load(self) -> List[Document]: ...
 
     def load_and_split(
         self, text_splitter: Optional[BaseDocumentTransformer] = None
-    ) -> List[Document]:
-        ...
+    ) -> List[Document]: ...
 
     # Attention: This method will be upgraded into an abstractmethod once it's
     #            implemented in all the existing subclasses.
     def lazy_load(
         self,
-    ) -> Iterator[Document]:
-        ...
+    ) -> Iterator[Document]: ...
 
 
 FORMAT_INSTRUCTION = (
@@ -82,8 +83,7 @@ FORMAT_INSTRUCTION = (
 
 @runtime_checkable
 class _FilePathLoader(Protocol):
-    def __call__(self, file_path: str, **kwargs: Dict[str, Any]) -> BaseLoader:
-        ...
+    def __call__(self, file_path: str, **kwargs: Dict[str, Any]) -> BaseLoader: ...
 
 
 @runtime_checkable
@@ -91,8 +91,7 @@ class _FilePathLoaderProtocol(Protocol):
     def __init__(self, file_path: str, **kwargs: Dict[str, Any]):  # noqa
         ...
 
-    def load(self) -> List[Document]:
-        ...
+    def load(self) -> List[Document]: ...
 
 
 TYPE_LOAD = Union[_FilePathLoader, Type[_FilePathLoaderProtocol]]
@@ -120,8 +119,7 @@ class PromptTemplate(Protocol):
     input_variables: List[str]
     template: str
 
-    def format(self, **kwargs: Any) -> str:
-        ...
+    def format(self, **kwargs: Any) -> str: ...
 
 
 logger = logging.getLogger(__name__)
@@ -472,7 +470,12 @@ class GoogleDriveUtilities(Serializable, BaseModel):
     ```
     """
 
-    model_config = ConfigDict(extra="allow",underscore_attrs_are_private=True,arbitrary_types_allowed=True,allow_mutation=True,)
+    model_config = ConfigDict(
+        extra="allow",
+        # underscore_attrs_are_private=True,
+        arbitrary_types_allowed=True,
+        frozen=False,
+    )
 
     @property
     def files(self) -> Any:
@@ -489,21 +492,23 @@ class GoogleDriveUtilities(Serializable, BaseModel):
 
     gdrive_api_file: Optional[FilePath] = None
     """
-    The file to use to connect to the google api or use 
-    `os.environ["GOOGLE_ACCOUNT_FILE"]`. 
+    The file to use to connect to the google api or use
+    `os.environ["GOOGLE_ACCOUNT_FILE"]`.
     May be a user or service json file.
     It's possible to use `GOOGLE_ACCOUNT_KEY` with json body."""
 
-    not_data = uuid4()
+    not_data: UUID = uuid4()
 
-    @validator("gdrive_api_file", pre=True, always=True)
+    # pre=True, always=True
+    @model_validator(mode="before")
+    @classmethod
     def validate_api_file(
         cls,
-        api_file: Optional[str],
         values: Dict[str, Any],
-    ) -> Optional[FilePath]:
+    ) -> Dict[str, Any]:
         if values.get("credentials"):
-            return None
+            return values
+        api_file: Optional[str] = values.get("gdrive_api_file")
         path_api_file = Path(api_file) if api_file else None
         if not api_file:
             env_api_file = os.environ.get("GOOGLE_ACCOUNT_FILE")
@@ -521,10 +526,12 @@ class GoogleDriveUtilities(Serializable, BaseModel):
                 raise ValueError("gdrive_api_file must be set")
         if path_api_file and not path_api_file.exists():
             raise ValueError(f"Api file '{api_file}' does not exist")
-        return path_api_file
+        values["gdrive_api_file"] = path_api_file
+        return values
 
-    @root_validator
-    def validate_template(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+    @model_validator(mode="before")
+    @classmethod
+    def validate_template_base(cls, values: Dict[str, Any]) -> Dict[str, Any]:
         template = values.get("template")
         if isinstance(template, str):
             template = get_template(template)
@@ -548,7 +555,7 @@ class GoogleDriveUtilities(Serializable, BaseModel):
         return values
 
     gdrive_token_path: Optional[Path] = None
-    """ Path to save the token.json file. By default, use the directory of 
+    """ Path to save the token.json file. By default, use the directory of
     `gdrive_api_file."""
 
     num_results: int = -1
@@ -604,17 +611,17 @@ class GoogleDriveUtilities(Serializable, BaseModel):
     """A sequence of column names to use as metadata. Optional."""
 
     scopes: List[str] = SCOPES
-    """ The scope to use the Google API. The default is for Read-only. 
+    """ The scope to use the Google API. The default is for Read-only.
     See [here](https://developers.google.com/identity/protocols/oauth2/scopes) """
 
     # Google Drive parameters
     corpora: Optional[Literal["user", "drive", "domain", "allDrives"]] = None
     """
     Groupings of files to which the query applies.
-    Supported groupings are: 'user' (files created by, opened by, or shared directly 
+    Supported groupings are: 'user' (files created by, opened by, or shared directly
     with the user),
     'drive' (files in the specified shared drive as indicated by the 'driveId'),
-    'domain' (files shared to the user's domain), and 'allDrives' (A combination of 
+    'domain' (files shared to the user's domain), and 'allDrives' (A combination of
     'user' and 'drive' for all drives where the user is a member).
     When able, use 'user' or 'drive', instead of 'allDrives', for efficiency."""
 
@@ -629,8 +636,8 @@ class GoogleDriveUtilities(Serializable, BaseModel):
     """The paths of the fields you want included in the response.
         If not specified, the response includes a default set of fields specific to this
         method.
-        For development, you can use the special value * to return all fields, but 
-        you'll achieve greater performance by only selecting the fields you need. For 
+        For development, you can use the special value * to return all fields, but
+        you'll achieve greater performance by only selecting the fields you need. For
         more information, see [Return specific fields for a file]
         (https://developers.google.com/drive/api/v3/fields-parameter)."""
 
@@ -638,7 +645,7 @@ class GoogleDriveUtilities(Serializable, BaseModel):
     """Whether both My Drive and shared drive items should be included in results."""
 
     includeLabels: Optional[bool] = None
-    """A comma-separated list of IDs of labels to include in the labelInfo part of 
+    """A comma-separated list of IDs of labels to include in the labelInfo part of
     the response."""
 
     includePermissionsForView: Optional[Literal["published"]] = None
@@ -661,22 +668,22 @@ class GoogleDriveUtilities(Serializable, BaseModel):
         ]
     ] = None
     """
-    A comma-separated list of sort keys. Valid keys are 'createdTime', 'folder', 
-    'modifiedByMeTime', 'modifiedTime', 'name', 'name_natural', 'quotaBytesUsed', 
-    'recency', 'sharedWithMeTime', 'starred', and 'viewedByMeTime'. Each key sorts 
-    ascending by default, but may be reversed with the 'desc' modifier. 
+    A comma-separated list of sort keys. Valid keys are 'createdTime', 'folder',
+    'modifiedByMeTime', 'modifiedTime', 'name', 'name_natural', 'quotaBytesUsed',
+    'recency', 'sharedWithMeTime', 'starred', and 'viewedByMeTime'. Each key sorts
+    ascending by default, but may be reversed with the 'desc' modifier.
     Example usage: `orderBy="folder,modifiedTime desc,name"`. Please note that there is
-    a current limitation for users with approximately one million files in which the 
+    a current limitation for users with approximately one million files in which the
     requested sort order is ignored."""
 
     pageSize: int = 100
     """
     The maximum number of files to return per page. Partial or empty result pages are
-    possible even before the end of the files list has been reached. Acceptable 
+    possible even before the end of the files list has been reached. Acceptable
     values are 1 to 1000, inclusive."""
 
     spaces: Optional[Literal["drive", "appDataFolder"]] = None
-    """A comma-separated list of spaces to query within the corpora. Supported values 
+    """A comma-separated list of spaces to query within the corpora. Supported values
     are `drive` and `appDataFolder`."""
 
     supportsAllDrives: bool = True
@@ -704,19 +711,19 @@ class GoogleDriveUtilities(Serializable, BaseModel):
         None,
     ] = None
     """
-    A `PromptTemplate` with the syntax compatible with the parameter `q` 
+    A `PromptTemplate` with the syntax compatible with the parameter `q`
     of Google API').
-    The variables may be set in the constructor, or during the invocation of 
+    The variables may be set in the constructor, or during the invocation of
     `lazy_get_relevant_documents()`.
     """
 
     # Private fields
-    _files = PrivateAttr(allow_mutation=True)
-    _docs = PrivateAttr(allow_mutation=True)
-    _spreadsheets = PrivateAttr(allow_mutation=True)
-    _slides = PrivateAttr(allow_mutation=True)
-    _gdrive_kwargs: Dict[str, Any] = PrivateAttr(allow_mutation=True)
-    _kwargs: Dict[str, Any] = PrivateAttr(allow_mutation=True)
+    _files = PrivateAttr()
+    _docs = PrivateAttr()
+    _spreadsheets = PrivateAttr()
+    _slides = PrivateAttr()
+    _gdrive_kwargs: Dict[str, Any] = PrivateAttr()
+    _kwargs: Dict[str, Any] = PrivateAttr()
     _folder_name_cache: _LRUCache = PrivateAttr(default_factory=_LRUCache)
     _not_supported: Set = PrivateAttr(default_factory=set)
     _no_data: UUID = PrivateAttr(default_factory=uuid4)
@@ -724,13 +731,11 @@ class GoogleDriveUtilities(Serializable, BaseModel):
     # Class var
     _default_page_size: ClassVar[int] = 50
 
-    @root_validator
-    def orderBy_is_compatible_with_recursive(
-        cls, values: Dict[str, Any]
-    ) -> Dict[str, Any]:
-        if values["orderBy"] and values["recursive"]:
+    @model_validator(mode="after")
+    def orderBy_is_compatible_with_recursive(self):
+        if self.orderBy and self.recursive:
             raise ValueError("`orderBy` is incompatible with `recursive` parameter")
-        return values
+        return self
 
     _gdrive_list_params: ClassVar[Set[str]] = {
         "corpora",
@@ -896,7 +901,7 @@ class GoogleDriveUtilities(Serializable, BaseModel):
     def __init__(self, **kwargs):  # type: ignore
         super().__init__(**kwargs)
         self._template = self.template  # Deprecated.
-        kwargs = {k: v for k, v in kwargs.items() if k not in self.__fields__}
+        kwargs = {k: v for k, v in kwargs.items() if k not in self.model_fields}
 
         self._files = None
         self._docs = None
@@ -1860,7 +1865,10 @@ class GoogleDriveAPIWrapper(GoogleDriveUtilities):
     Use a specific template if you want a different approach.
     """
 
-    model_config = ConfigDict(extra="allow",underscore_attrs_are_private=True,)
+    model_config = ConfigDict(
+        extra="allow",
+        # underscore_attrs_are_private=True,
+    )
 
     mode: Literal[
         "snippets", "snippets-markdown", "documents", "documents-markdown"
@@ -1887,7 +1895,10 @@ class GoogleDriveAPIWrapper(GoogleDriveUtilities):
 
     @model_validator(mode="before")
     @classmethod
-    def validate_template(cls, v: Dict[str, Any]) -> Any:
+    def validate_template(
+        cls,
+        v: Dict[str, Any],
+    ) -> Any:
         folder_id = v.get("folder_id")
 
         if "template" not in v:
@@ -1896,6 +1907,7 @@ class GoogleDriveAPIWrapper(GoogleDriveUtilities):
             else:
                 template = get_template("gdrive-by-name")
             v["template"] = template
+
         return v
 
     def run(self, query: str) -> str:
@@ -1966,10 +1978,10 @@ class GoogleDriveAPIWrapper(GoogleDriveUtilities):
             if "summary" in document.metadata:
                 metadata_result["snippet"] = document.metadata["summary"]
             else:
-                metadata_result[
-                    "snippet"
-                ] = GoogleDriveAPIWrapper._snippet_from_page_content(
-                    document.page_content
+                metadata_result["snippet"] = (
+                    GoogleDriveAPIWrapper._snippet_from_page_content(
+                        document.page_content
+                    )
                 )
             metadata_results.append(metadata_result)
         if not metadata_results:

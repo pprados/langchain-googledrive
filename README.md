@@ -7,7 +7,7 @@ pip install langchain-googledrive
 
 # For debug
 ```
-poetry install -with test
+poetry install --with test
 make test
 ```
 
@@ -35,8 +35,8 @@ Fully compatible with Google Drive API
 - Convert GDoc, GSheet and GSlide with different modes
     - Extract text, bullet point, tables, titles, links
 
-  
+
 # langchain Pull-request
-I couldn't get a [pull-request](https://github.com/hwchase17/langchain/pull/5135) accepted because 
+I couldn't get a [pull-request](https://github.com/hwchase17/langchain/pull/5135) accepted because
 the project is too big.
 Sorry for that.

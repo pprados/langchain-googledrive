@@ -295,11 +295,13 @@ def test_deprecated_service_account_key(google_workspace: MagicMock) -> None:
         )
         docs = loader.load()
         assert len(docs) == 1
-    assert [str(warn.message) for warn in w.list] == [
-        "document_ids and file_ids are deprecated. Use the template "
-        '"gdrive-by-name-in-folder", a `folder_id`and the filename in `query`.',
-        "service_account_key was deprecated. Use GOOGLE_ACCOUNT_FILE env. variable.",
-    ]
+    assert set([str(warn.message) for warn in w.list]) == set(
+        [
+            "document_ids and file_ids are deprecated. Use the template "
+            '"gdrive-by-name-in-folder", a `folder_id`and the filename in `query`.',
+            "service_account_key was deprecated. Use GOOGLE_ACCOUNT_FILE env. variable.",
+        ]
+    )
 
 
 # Test older ipynb script

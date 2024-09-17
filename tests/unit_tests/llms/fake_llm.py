@@ -1,9 +1,10 @@
 """Fake LLM wrapper for testing purposes."""
+
 from typing import Any, Dict, List, Mapping, Optional, cast
 
 from langchain_core.callbacks.manager import CallbackManagerForLLMRun
 from langchain_core.language_models import LLM
-from pydantic import validator
+from pydantic import ValidationInfo, field_validator, validator
 
 
 class FakeLLM(LLM):
@@ -13,10 +14,14 @@ class FakeLLM(LLM):
     sequential_responses: Optional[bool] = False
     response_index: int = 0
 
-    @validator("queries", always=True)
+    @field_validator("queries")
+    @classmethod
     def check_queries_required(
-        cls, queries: Optional[Mapping], values: Mapping[str, Any]
+        cls,
+        queries: Optional[Mapping],
+        info: ValidationInfo,
     ) -> Optional[Mapping]:
+        values: Mapping[str, Any] = info.data
         if values.get("sequential_response") and not queries:
             raise ValueError(
                 "queries is required when sequential_response is set to True"

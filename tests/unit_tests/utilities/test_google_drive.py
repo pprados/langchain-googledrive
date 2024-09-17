@@ -292,7 +292,7 @@ def patch_google_workspace(
                 else:
 
                     class FakeResp(BaseModel):
-                        status = 400
+                        status: int = 400
                         reason: str = ""
 
                     raise HttpError(
@@ -600,8 +600,9 @@ def test_link_field(google_workspace: MagicMock) -> None:
     )
     docs = list(utilities.lazy_get_relevant_documents())
     assert (
-        docs[0].metadata["source"]
-    ) == "https://docs.google.com/document/d/1/edit?usp=drivesdk"
+        (docs[0].metadata["source"])
+        == "https://docs.google.com/document/d/1/edit?usp=drivesdk"
+    )
 
     utilities = GoogleDriveUtilities(
         api_file=Path(_credential),
@@ -615,8 +616,9 @@ def test_link_field(google_workspace: MagicMock) -> None:
     )
     docs = list(utilities.lazy_get_relevant_documents())
     assert (
-        docs[0].metadata["source"]
-    ) == "https://drive.google.com/uc?id=1&export=download"
+        (docs[0].metadata["source"])
+        == "https://drive.google.com/uc?id=1&export=download"
+    )
 
 
 @unittest.skipIf(not google_workspace_installed, "Google api not installed")

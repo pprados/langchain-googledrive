@@ -5,7 +5,13 @@ from langchain_core.callbacks.manager import (
     CallbackManagerForRetrieverRun,
 )
 from langchain_core.documents import Document
-from pydantic import Extra, root_validator, model_validator
+from pydantic import (
+    Extra,
+    ValidationInfo,
+    ValidatorFunctionWrapHandler,
+    root_validator,
+    model_validator,
+)
 from langchain_core.retrievers import BaseRetriever
 
 from ..utilities.google_drive import (
@@ -13,7 +19,6 @@ from ..utilities.google_drive import (
     get_template,
 )
 from pydantic import ConfigDict
-
 
 
 class GoogleDriveRetriever(GoogleDriveUtilities, BaseRetriever):
@@ -26,7 +31,11 @@ class GoogleDriveRetriever(GoogleDriveUtilities, BaseRetriever):
     (https://developers.google.com/workspace/guides/auth-overview).
     """
 
-    model_config = ConfigDict(extra="allow",allow_mutation=True,underscore_attrs_are_private=True,)
+    model_config = ConfigDict(
+        extra="allow",
+        frozne=False,
+        # underscore_attrs_are_private=True,
+    )
 
     mode: Literal[
         "snippets", "snippets-markdown", "documents", "documents-markdown"
@@ -34,7 +43,10 @@ class GoogleDriveRetriever(GoogleDriveUtilities, BaseRetriever):
 
     @model_validator(mode="before")
     @classmethod
-    def validate_template(cls, v: Dict[str, Any]) -> Any:
+    def validate_template(
+        cls,
+        v: Dict[str, Any],
+    ) -> Any:
         folder_id = v.get("folder_id")
 
         if not v.get("template"):
