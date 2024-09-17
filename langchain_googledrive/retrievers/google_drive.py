@@ -33,8 +33,7 @@ class GoogleDriveRetriever(GoogleDriveUtilities, BaseRetriever):
 
     model_config = ConfigDict(
         extra="allow",
-        frozne=False,
-        # underscore_attrs_are_private=True,
+        frozen=False,
     )
 
     mode: Literal[

@@ -34,14 +34,11 @@ from langchain_core.documents import BaseDocumentTransformer, Document
 from langchain_core.load.serializable import Serializable
 from pydantic import (
     BaseModel,
-    Extra,
     Field,
     FilePath,
     ValidationInfo,
     ValidatorFunctionWrapHandler,
     field_validator,
-    root_validator,
-    validator,
     PrivateAttr,
     model_validator,
 )
@@ -732,7 +729,7 @@ class GoogleDriveUtilities(Serializable, BaseModel):
     _default_page_size: ClassVar[int] = 50
 
     @model_validator(mode="after")
-    def orderBy_is_compatible_with_recursive(self):
+    def orderBy_is_compatible_with_recursive(self) -> "GoogleDriveUtilities":
         if self.orderBy and self.recursive:
             raise ValueError("`orderBy` is incompatible with `recursive` parameter")
         return self
