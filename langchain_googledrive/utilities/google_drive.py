@@ -1123,7 +1123,7 @@ class GoogleDriveUtilities(Serializable, BaseModel):
                 return
             else:
                 if not description:
-                    return iter([])
+                    return
                 yield Document(
                     page_content=description,
                     metadata={**self._extract_meta_data(target), **{"id": target_id}},
@@ -1191,7 +1191,7 @@ class GoogleDriveUtilities(Serializable, BaseModel):
                         f"Impossible to read or convert the content "
                         f"of '{file['name']}'' ({file['id']}) [{e}]"
                     )
-                    return iter([])
+                    return
             else:
                 if self.filter(self, file):
                     try:
