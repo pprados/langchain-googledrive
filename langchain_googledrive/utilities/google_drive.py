@@ -496,10 +496,6 @@ class GoogleDriveUtilities(Serializable, BaseModel):
 
     not_data: UUID = uuid4()
 
-    # not used, but added to avoid call-arg errors
-    folder_id: Optional[str] = None
-    mime_type: Optional[str] = None
-
     # pre=True, always=True
     @model_validator(mode="before")
     @classmethod

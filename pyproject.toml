@@ -104,5 +104,8 @@ ignore-words-list = 'momento,collison,ned,foor,reworkd,parth,whats,aapply,mysogy
 
 
 [tool.mypy]
+plugins = [
+  "pydantic.mypy"
+]
 ignore_missing_imports = "True"
 disallow_untyped_defs = "True"
