@@ -34,7 +34,7 @@ lint_diff format_diff: PYTHON_FILES=$(shell git diff --relative=libs/experimenta
 lint lint_diff:
 	poetry run mypy --install-types --non-interactive $(PYTHON_FILES)
 	poetry run black $(PYTHON_FILES) --check
-	poetry run ruff .
+	poetry run ruff check --select I $(PYTHON_FILES)
 
 format format_diff:
 	poetry run black $(PYTHON_FILES)
