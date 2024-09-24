@@ -34,7 +34,8 @@ class PromptTemplate(Protocol):
     input_variables: List[str]
     template: str
 
-    def format(self, **kwargs: Any) -> str: ...
+    def format(self, **kwargs: Any) -> str:
+        ...
 
 
 logger = logging.getLogger(__name__)
@@ -56,7 +57,7 @@ class GoogleDriveLoader(BaseLoader, GoogleDriveUtilities):
 
     @model_validator(mode="before")
     @classmethod
-    def validate_file_types(cls, values: Dict[str, Any]) -> Any:
+    def validate_file_types(cls, values: Dict[str, Any]) -> Dict[str, Any]:
         file_types = values.get("file_types")
         if file_types:
             warnings.warn(

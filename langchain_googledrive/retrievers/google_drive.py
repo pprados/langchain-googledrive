@@ -8,11 +8,7 @@ from langchain_core.documents import Document
 from langchain_core.retrievers import BaseRetriever
 from pydantic import (
     ConfigDict,
-    Extra,
-    ValidationInfo,
-    ValidatorFunctionWrapHandler,
     model_validator,
-    root_validator,
 )
 
 from ..utilities.google_drive import (
@@ -45,7 +41,7 @@ class GoogleDriveRetriever(GoogleDriveUtilities, BaseRetriever):
     def validate_template(
         cls,
         v: Dict[str, Any],
-    ) -> Any:
+    ) -> Dict[str, Any]:
         folder_id = v.get("folder_id")
 
         if not v.get("template"):
