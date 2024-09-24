@@ -16,7 +16,7 @@ from typing import (
 from langchain_community.document_loaders.base import BaseLoader
 from langchain_core.documents import Document
 from langchain_core.language_models import BaseLanguageModel
-from langchain_core.pydantic_v1 import root_validator
+from pydantic import model_validator, root_validator
 
 from ..utilities.google_drive import (
     GoogleDriveUtilities,
@@ -34,8 +34,7 @@ class PromptTemplate(Protocol):
     input_variables: List[str]
     template: str
 
-    def format(self, **kwargs: Any) -> str:
-        ...
+    def format(self, **kwargs: Any) -> str: ...
 
 
 logger = logging.getLogger(__name__)
@@ -55,8 +54,9 @@ class GoogleDriveLoader(BaseLoader, GoogleDriveUtilities):
     """Deprecated: Whether to load trashed files. 
     Only applies when folder_id is given."""
 
-    @root_validator(pre=True)
-    def validate_file_types(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+    @model_validator(mode="before")
+    @classmethod
+    def validate_file_types(cls, values: Dict[str, Any]) -> Any:
         file_types = values.get("file_types")
         if file_types:
             warnings.warn(
@@ -101,8 +101,9 @@ class GoogleDriveLoader(BaseLoader, GoogleDriveUtilities):
             full_file_types.append(file_type)
         return full_file_types
 
-    @root_validator(pre=True)
-    def validate_load_trashed_files(cls, values: Dict[str, Any]) -> Dict[str, Any]:
+    @model_validator(mode="before")
+    @classmethod
+    def validate_load_trashed_files(cls, values: Dict[str, Any]) -> Any:
         if "load_trashed_files" in values:
             warnings.warn(
                 "load_trashed_files is deprecated. Use a template.", DeprecationWarning
@@ -115,10 +116,11 @@ class GoogleDriveLoader(BaseLoader, GoogleDriveUtilities):
 
         return values
 
-    @root_validator(pre=True)
+    @model_validator(mode="before")
+    @classmethod
     def validate_folder_id_or_document_ids_or_file_ids(
         cls, values: Dict[str, Any]
-    ) -> Dict[str, Any]:
+    ) -> Any:
         """Validate that either folder_id or document_ids is set, but not both."""
         if values.get("folder_id") and values.get("document_ids"):
             raise ValueError("only folder_id or document_ids must be set")
@@ -141,10 +143,11 @@ class GoogleDriveLoader(BaseLoader, GoogleDriveUtilities):
                 )
         return values
 
-    @root_validator(pre=True)
+    @model_validator(mode="before")
+    @classmethod
     def validate_older_api_and_new_environment_variable(
         cls, values: Dict[str, Any]
-    ) -> Dict[str, Any]:
+    ) -> Any:
         service_account_key = values.get("service_account_key")
         credentials_path = values.get("credentials_path")
 

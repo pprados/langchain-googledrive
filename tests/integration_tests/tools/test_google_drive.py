@@ -28,7 +28,7 @@ def test_google_drive() -> None:
     from langchain.agents import AgentType, initialize_agent
     from langchain_openai import OpenAI
 
-    llm = OpenAI(model_name="gpt-4o-mini", temperature=0)
+    llm = OpenAI(model="gpt-4o-mini", temperature=0)
     agent = initialize_agent(
         tools=[tool],
         llm=llm,
@@ -84,7 +84,7 @@ def test_google_drive_with_credential() -> None:
     from langchain.agents import AgentType, initialize_agent
     from langchain_openai import OpenAI
 
-    llm = OpenAI(model_name="gpt-4o-mini", temperature=0)
+    llm = OpenAI(model="gpt-4o-mini", temperature=0)
     agent = initialize_agent(
         tools=[tool],
         llm=llm,

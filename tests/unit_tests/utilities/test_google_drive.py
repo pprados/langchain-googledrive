@@ -10,7 +10,7 @@ from unittest.mock import MagicMock
 import pytest
 from langchain_core.documents import Document
 from langchain_core.prompts import PromptTemplate
-from langchain_core.pydantic_v1 import BaseModel
+from pydantic import BaseModel
 from pytest_mock import MockerFixture
 
 # from langchain_googledrive.utilities import GoogleDriveAPIWrapper
@@ -292,7 +292,7 @@ def patch_google_workspace(
                 else:
 
                     class FakeResp(BaseModel):
-                        status = 400
+                        status: int = 400
                         reason: str = ""
 
                     raise HttpError(

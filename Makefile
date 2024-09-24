@@ -13,7 +13,7 @@ TEST_FILE ?= tests/unit_tests/
 test:
 	poetry run pytest -v $(TEST_FILE)
 
-tests: 
+tests:
 	poetry run pytest -v $(TEST_FILE)
 
 test_watch:
@@ -34,11 +34,11 @@ lint_diff format_diff: PYTHON_FILES=$(shell git diff --relative=libs/experimenta
 lint lint_diff:
 	poetry run mypy --install-types --non-interactive $(PYTHON_FILES)
 	poetry run black $(PYTHON_FILES) --check
-	poetry run ruff .
+	poetry run ruff check --select I $(PYTHON_FILES)
 
 format format_diff:
 	poetry run black $(PYTHON_FILES)
-	poetry run ruff --select I --fix $(PYTHON_FILES)
+	poetry run ruff check --select I --fix $(PYTHON_FILES)
 
 spell_check:
 	poetry run codespell --toml pyproject.toml
