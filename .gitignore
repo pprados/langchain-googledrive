@@ -1,6 +1,7 @@
 .env
 .token.json
 credentials.json
+.credentials
 service.json
 /octo-api-clients/
 /.credentials/
@@ -19,3 +20,4 @@ dist/
 docs/_dist
 .ipynb_checkpoints
 .github
+

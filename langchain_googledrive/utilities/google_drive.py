@@ -38,9 +38,6 @@ from pydantic import (
     Field,
     FilePath,
     PrivateAttr,
-    ValidationInfo,
-    ValidatorFunctionWrapHandler,
-    field_validator,
     model_validator,
 )
 
@@ -59,17 +56,20 @@ class BaseLoader(Protocol):
     # Sub-classes should implement this method
     # as return list(self.lazy_load()).
     # This method returns a List which is materialized in memory.
-    def load(self) -> List[Document]: ...
+    def load(self) -> List[Document]:
+        ...
 
     def load_and_split(
         self, text_splitter: Optional[BaseDocumentTransformer] = None
-    ) -> List[Document]: ...
+    ) -> List[Document]:
+        ...
 
     # Attention: This method will be upgraded into an abstractmethod once it's
     #            implemented in all the existing subclasses.
     def lazy_load(
         self,
-    ) -> Iterator[Document]: ...
+    ) -> Iterator[Document]:
+        ...
 
 
 FORMAT_INSTRUCTION = (
@@ -80,7 +80,8 @@ FORMAT_INSTRUCTION = (
 
 @runtime_checkable
 class _FilePathLoader(Protocol):
-    def __call__(self, file_path: str, **kwargs: Dict[str, Any]) -> BaseLoader: ...
+    def __call__(self, file_path: str, **kwargs: Dict[str, Any]) -> BaseLoader:
+        ...
 
 
 @runtime_checkable
@@ -88,7 +89,8 @@ class _FilePathLoaderProtocol(Protocol):
     def __init__(self, file_path: str, **kwargs: Dict[str, Any]):  # noqa
         ...
 
-    def load(self) -> List[Document]: ...
+    def load(self) -> List[Document]:
+        ...
 
 
 TYPE_LOAD = Union[_FilePathLoader, Type[_FilePathLoaderProtocol]]
@@ -116,7 +118,8 @@ class PromptTemplate(Protocol):
     input_variables: List[str]
     template: str
 
-    def format(self, **kwargs: Any) -> str: ...
+    def format(self, **kwargs: Any) -> str:
+        ...
 
 
 logger = logging.getLogger(__name__)
@@ -1899,7 +1902,7 @@ class GoogleDriveAPIWrapper(GoogleDriveUtilities):
     def validate_template(
         cls,
         v: Dict[str, Any],
-    ) -> Any:
+    ) -> Dict[str, Any]:
         folder_id = v.get("folder_id")
 
         if "template" not in v:
@@ -1979,10 +1982,10 @@ class GoogleDriveAPIWrapper(GoogleDriveUtilities):
             if "summary" in document.metadata:
                 metadata_result["snippet"] = document.metadata["summary"]
             else:
-                metadata_result["snippet"] = (
-                    GoogleDriveAPIWrapper._snippet_from_page_content(
-                        document.page_content
-                    )
+                metadata_result[
+                    "snippet"
+                ] = GoogleDriveAPIWrapper._snippet_from_page_content(
+                    document.page_content
                 )
             metadata_results.append(metadata_result)
         if not metadata_results:
