@@ -11,26 +11,27 @@ poetry install --with test
 make test
 ```
 
-# Features:
+## Documentation
 
-Langchain component:
+Documentation is available in the [docs](docs) folder in the form of Jupyter notebooks.
+
 - [Document Loaders](docs/integrations/document_loaders/google_drive.ipynb)
 - [Retrievers](docs/integrations/retrievers/google_drive.ipynb)
 - [Toolkits](docs/integrations/toolkits/google_drive.ipynb)
+- [Tools](docs/integrations/tools/google_drive.ipynb)
 
-Fully compatible with Google Drive API
-- Manage file in trash
-- Manage shortcut
-- Manage file description
-- Paging with request GDrive list()
-- Multiple kinds of template for request GDrive
-- Convert a lot of mime type (can be configured). The list is adjusted according to the packages availables
-- Can use only the description of files, without loading and conversion of the body
-- Lambda fine filter
-- Remove duplicate documents (in case of shortcut)
-- Add Url to documents (or part of documents like specific slide)
-- Use environment variable for reference an API tokens
-- Manage different king of strange state with Google File (absence of URL, etc.)
-- Use fully lazy strategy to save memory
-- Convert GDoc, GSheet and GSlide with different modes
-    - Extract text, bullet point, tables, titles, links
+## Dependencies
+
+In order to support advanced features, you may need to install the following optional dependencies:
+
+| Dependency | Purpose |
+|------------|---------|
+| `unstructured` | Parsing and extracting text from various unstructured document formats |
+| `pdf2image` | Converting PDF files to images for OCR processing |
+| `pypandoc` | Converting between different document formats |
+| `pytesseract` | Performing OCR (Optical Character Recognition) on images and scanned documents |
+| `pdfminer.six` | Extracting text and metadata from PDF documents |
+| `pi_heif` | Handling HEIF (High Efficiency Image Format) image files |
+| `detectron2` | Advanced image analysis for complex document structures |
+
+These dependencies enhance the ability to process and extract information from a wide variety of file types that may be stored in Google Drive. Install the ones you need based on the types of documents you expect to work with.
