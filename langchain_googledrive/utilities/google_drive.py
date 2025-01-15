@@ -1386,7 +1386,6 @@ class GoogleDriveUtilities(Serializable, BaseModel):
                         logger.debug(f"Search in subdir '{subdir_query}'")
                         list_kwargs = {
                             **self._gdrive_kwargs,
-                            **kwargs,
                             **{
                                 "pageSize": (
                                     max(100, int(num_results * 1.5))
@@ -1396,6 +1395,8 @@ class GoogleDriveUtilities(Serializable, BaseModel):
                                 "fields": "nextPageToken, "
                                 "files(id,name, mimeType, shortcutDetails)",
                             },
+                            **kwargs,
+
                         }
                         # Purge list_kwargs
                         list_kwargs = {
