@@ -22,6 +22,7 @@ from typing import (
     Protocol,
     Sequence,
     Set,
+    Tuple,
     Type,
     Union,
     cast,
@@ -139,10 +140,10 @@ logger = logging.getLogger(__name__)
 # - Environment variable for reference the API tokens
 # - Different kind of strange state with Google File (absence of URL, etc.)
 
-SCOPES: List[str] = [
+SCOPES: Tuple[str] = (
     # See https://developers.google.com/identity/protocols/oauth2/scopes
     "https://www.googleapis.com/auth/drive.readonly",
-]
+)
 
 
 class _LRUCache:
@@ -564,6 +565,9 @@ class GoogleDriveUtilities(Serializable, BaseModel):
     mode: str = "documents"
     """Return the document."""
 
+    includeTabsContent: bool = False
+    """One document by tag."""
+
     suggestionsViewMode: Literal[
         "DEFAULT_FOR_CURRENT_ACCESS",
         "SUGGESTIONS_INLINE",
@@ -604,10 +608,10 @@ class GoogleDriveUtilities(Serializable, BaseModel):
     """Generate one document by line ("single"),
             or one document with markdown array and `<PAGE BREAK>` tags."""
 
-    gsheet_columns: Sequence[str] = []
+    gsheet_columns: Sequence[str] = ()
     """A sequence of column names to use in the body. Optional."""
 
-    gsheet_metadata_columns: Sequence[str] = []
+    gsheet_metadata_columns: Sequence[str] = ()
     """A sequence of column names to use as metadata. Optional."""
 
     scopes: List[str] = SCOPES
@@ -1336,6 +1340,12 @@ class GoogleDriveUtilities(Serializable, BaseModel):
                                 document.metadata.get("source")
                                 or document.metadata["gdriveId"]
                             )
+                            if "tabIndex" in document.metadata:
+                                document_key = (
+                                    document_key
+                                    + "#"
+                                    + str(document.metadata["tabIndex"])
+                                )
                             if document_key in documents_id:
                                 # May by, with a link
                                 logger.debug(
@@ -1396,7 +1406,6 @@ class GoogleDriveUtilities(Serializable, BaseModel):
                                 "files(id,name, mimeType, shortcutDetails)",
                             },
                             **kwargs,
-
                         }
                         # Purge list_kwargs
                         list_kwargs = {
@@ -1807,12 +1816,23 @@ class GoogleDriveUtilities(Serializable, BaseModel):
             logger.warning(f"File with id '{file['id']}' is not a GDoc")
         else:
             gdoc = self._docs.get(
-                documentId=file["id"], suggestionsViewMode=self.suggestionsViewMode
+                documentId=file["id"],
+                suggestionsViewMode=self.suggestionsViewMode,
+                includeTabsContent=self.includeTabsContent,
             ).execute()
-            text = self._extract_text(gdoc["body"]["content"])
-            yield Document(
-                page_content="\n".join(text), metadata=self._extract_meta_data(file)
-            )
+            if "tabs" in gdoc:
+                for idx, tab in enumerate(gdoc["tabs"]):
+                    texts = self._extract_text(tab["documentTab"])
+                    yield Document(
+                        page_content="\n".join(texts),
+                        metadata={**self._extract_meta_data(file), "tabIndex": idx},
+                    )
+            else:
+                texts = self._extract_text(gdoc["body"]["content"])
+                yield Document(
+                    page_content="\n".join(texts),
+                    metadata=self._extract_meta_data(file),
+                )
 
     def lazy_load_document_from_id(self, file_id: str) -> Iterator[Document]:
         return self._lazy_load_document_from_file(self._get_file_by_id(file_id=file_id))

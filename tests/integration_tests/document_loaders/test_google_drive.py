@@ -26,6 +26,20 @@ def test_google_drive() -> None:
         print("---")
         print(doc.page_content.strip()[:60] + "...")
     # %%
+    loader = GoogleDriveLoader(
+        folder_id=folder_id,
+        recursive=False,
+        template="gdrive-query",  # Default template to use
+        query="machine learning",
+        num_results=2,  # Maximum number of file to load
+        supportsAllDrives=False,  # GDrive `list()` parameter
+        includeTabsContent=True,
+    )
+
+    for doc in loader.load():
+        print("---")
+        print(doc.page_content.strip()[:60] + "...")
+    # %%
     from langchain.prompts.prompt import PromptTemplate
 
     loader = GoogleDriveLoader(
