@@ -1,3 +1,5 @@
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/pprados/langchain-googledrive)
+
 This is a more advanced integration of Google Drive with langchain.
 
 # Install
